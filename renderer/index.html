@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>BeanyIK</title>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' app:; script-src 'self' app: 'unsafe-inline' 'unsafe-eval'; style-src 'self' app: 'unsafe-inline'; img-src 'self' app: data: blob:">
+<script>
+(function () {
+  try {
+    var theme = localStorage.getItem('beanyik_theme') || 'light';
+    if (theme === 'system') theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    document.documentElement.dataset.theme = theme;
+  } catch (e) { document.documentElement.dataset.theme = 'light'; }
+})();
+</script>
+<script type="importmap">
+{ "imports": { "three": "./vendor/three/three.module.js", "three/addons/": "./vendor/three/" } }
+</script>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="appbar">
+    <div class="appbar-left">
+      <div class="app-logo" title="BeanyIK"><span>IK</span></div>
+      <button class="appbar-btn" id="btn-menu"><span class="ico" data-icon="menu"></span>Menu</button>
+      <div class="tabs" id="tabs">
+        <button class="tab" data-tab="home" id="tab-home"><span class="ico" data-icon="home"></span>Home</button>
+        <button class="tab doc-tab" data-tab="doc" id="tab-doc" hidden>
+          <span class="ico" data-icon="robot"></span><span id="doc-title">Untitled robot</span><span class="dirty-dot" id="dirty-dot"></span>
+        </button>
+      </div>
+    </div>
+    <div class="appbar-right">
+      <button class="icon-btn" id="btn-undo" title="Undo (Ctrl+Z)"><span class="ico" data-icon="undo"></span></button>
+      <button class="icon-btn" id="btn-redo" title="Redo (Ctrl+Y)"><span class="ico" data-icon="redo"></span></button>
+      <button class="icon-btn" id="btn-theme" title="Toggle theme"><span class="ico" data-icon="theme"></span></button>
+      <button class="btn btn-primary" id="btn-save"><span class="ico" data-icon="save"></span>Save</button>
+      <div class="win-buttons">
+        <button class="win-btn" id="btn-min" title="Minimize"><span class="ico" data-icon="winMin"></span></button>
+        <button class="win-btn" id="btn-max" title="Maximize"><span class="ico" data-icon="winMax"></span></button>
+        <button class="win-btn win-close" id="btn-close" title="Close"><span class="ico" data-icon="winClose"></span></button>
+      </div>
+    </div>
+  </header>
+
+  <div class="menu-popover" id="menu" hidden></div>
+
+  <!-- Home (start screen) -->
+  <section class="home" id="home"></section>
+
+  <!-- Document workspace -->
+  <section class="workspace" id="workspace" hidden>
+    <aside class="tools-panel" id="tools-panel"></aside>
+
+    <main class="canvas-area" id="canvas-area">
+      <div class="quick-rail" id="quick-rail"></div>
+      <div class="viewport-card" id="viewport-card">
+        <div class="viewport" id="viewport"></div>
+        <div class="drop-hint" id="drop-hint"><span class="ico" data-icon="plus"></span>Drop to add to the end of the chain</div>
+        <div class="hud" id="hud"></div>
+      </div>
+      <div class="float-pill" id="view-pill"></div>
+    </main>
+
+    <aside class="side-panel" id="side-panel">
+      <div class="side-head"><h2 id="side-title"></h2><button class="icon-btn small" id="side-close" title="Hide panel"><span class="ico" data-icon="close"></span></button></div>
+      <div class="side-body" id="side-body"></div>
+    </aside>
+    <nav class="right-rail" id="right-rail"></nav>
+  </section>
+
+  <div class="toast-host" id="toasts"></div>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

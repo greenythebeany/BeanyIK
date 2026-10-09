@@ -1,0 +1,52 @@
+{
+  "name": "beanyik",
+  "productName": "BeanyIK",
+  "version": "0.1.0",
+  "description": "GreenyBeany's terminal-styled drag & drop robot kinematics builder — DH / custom matrices, forward & inverse kinematics",
+  "main": "main.js",
+  "private": true,
+  "author": "GreenyBeany",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "vendor": "node scripts/vendor.js",
+    "test": "node scripts/selftest.mjs",
+    "dist": "cross-env CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "cross-env": "^10.1.0",
+    "electron": "^31.3.1",
+    "electron-builder": "^24.13.3",
+    "three": "0.170.0"
+  },
+  "build": {
+    "appId": "dev.greenybeany.beanyik",
+    "productName": "BeanyIK",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "icon.png",
+      "renderer/**/*"
+    ],
+    "icon": "icon.png",
+    "win": {
+      "target": [
+        "portable",
+        "nsis"
+      ]
+    },
+    "linux": {
+      "target": [
+        "AppImage"
+      ],
+      "category": "Education"
+    }
+  },
+  "allowScripts": {
+    "electron@31.7.7": true
+  }
+}
