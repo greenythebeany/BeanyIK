@@ -22,23 +22,24 @@
   <header class="appbar">
     <div class="appbar-left">
       <div class="app-logo" title="BeanyIK"><span>IK</span></div>
-      <button class="appbar-btn" id="btn-menu"><span class="ico" data-icon="menu"></span>Menu</button>
+      <button class="appbar-btn" id="btn-menu"><span class="ico" data-icon="menu"></span><span data-i18n="Menu">Menu</span></button>
       <div class="tabs" id="tabs">
-        <button class="tab" data-tab="home" id="tab-home"><span class="ico" data-icon="home"></span>Home</button>
+        <button class="tab" data-tab="home" id="tab-home"><span class="ico" data-icon="home"></span><span data-i18n="Home">Home</span></button>
         <button class="tab doc-tab" data-tab="doc" id="tab-doc" hidden>
           <span class="ico" data-icon="robot"></span><span id="doc-title">Untitled robot</span><span class="dirty-dot" id="dirty-dot"></span>
         </button>
       </div>
     </div>
     <div class="appbar-right">
-      <button class="icon-btn" id="btn-undo" title="Undo (Ctrl+Z)"><span class="ico" data-icon="undo"></span></button>
-      <button class="icon-btn" id="btn-redo" title="Redo (Ctrl+Y)"><span class="ico" data-icon="redo"></span></button>
-      <button class="icon-btn" id="btn-theme" title="Toggle theme"><span class="ico" data-icon="theme"></span></button>
-      <button class="btn btn-primary" id="btn-save"><span class="ico" data-icon="save"></span>Save</button>
+      <button class="icon-btn" id="btn-undo" data-i18n-title="Undo (Ctrl+Z)"><span class="ico" data-icon="undo"></span></button>
+      <button class="icon-btn" id="btn-redo" data-i18n-title="Redo (Ctrl+Y)"><span class="ico" data-icon="redo"></span></button>
+      <button class="lang-btn" id="btn-lang" title="Language / Jazyk"><span class="ico" data-icon="globe"></span><span id="lang-label">EN</span></button>
+      <button class="icon-btn" id="btn-theme" data-i18n-title="Toggle theme"><span class="ico" data-icon="theme"></span></button>
+      <button class="btn btn-primary" id="btn-save"><span class="ico" data-icon="save"></span><span data-i18n="Save">Save</span></button>
       <div class="win-buttons">
-        <button class="win-btn" id="btn-min" title="Minimize"><span class="ico" data-icon="winMin"></span></button>
-        <button class="win-btn" id="btn-max" title="Maximize"><span class="ico" data-icon="winMax"></span></button>
-        <button class="win-btn win-close" id="btn-close" title="Close"><span class="ico" data-icon="winClose"></span></button>
+        <button class="win-btn" id="btn-min" data-i18n-title="Minimize"><span class="ico" data-icon="winMin"></span></button>
+        <button class="win-btn" id="btn-max" data-i18n-title="Maximize"><span class="ico" data-icon="winMax"></span></button>
+        <button class="win-btn win-close" id="btn-close" data-i18n-title="Close"><span class="ico" data-icon="winClose"></span></button>
       </div>
     </div>
   </header>
@@ -56,14 +57,14 @@
       <div class="quick-rail" id="quick-rail"></div>
       <div class="viewport-card" id="viewport-card">
         <div class="viewport" id="viewport"></div>
-        <div class="drop-hint" id="drop-hint"><span class="ico" data-icon="plus"></span>Drop to add to the end of the chain</div>
+        <div class="drop-hint" id="drop-hint"><span class="ico" data-icon="plus"></span><span data-i18n="Drop to add to the end of the chain"></span></div>
         <div class="hud" id="hud"></div>
       </div>
       <div class="float-pill" id="view-pill"></div>
     </main>
 
     <aside class="side-panel" id="side-panel">
-      <div class="side-head"><h2 id="side-title"></h2><button class="icon-btn small" id="side-close" title="Hide panel"><span class="ico" data-icon="close"></span></button></div>
+      <div class="side-head"><h2 id="side-title"></h2><button class="icon-btn small" id="side-close" data-i18n-title="Hide panel"><span class="ico" data-icon="close"></span></button></div>
       <div class="side-body" id="side-body"></div>
     </aside>
     <nav class="right-rail" id="right-rail"></nav>

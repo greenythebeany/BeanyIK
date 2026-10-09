@@ -1,0 +1,248 @@
+// UI translations. English strings are the keys; missing entries fall back
+// to English. Use {name} placeholders for interpolated values.
+
+const SK = {
+  // app bar / menu
+  'Menu': 'Menu',
+  'Home': 'Domov',
+  'Save': 'Uložiť',
+  'Undo (Ctrl+Z)': 'Späť (Ctrl+Z)',
+  'Redo (Ctrl+Y)': 'Znova (Ctrl+Y)',
+  'Toggle theme': 'Prepnúť tému',
+  'Minimize': 'Minimalizovať',
+  'Maximize': 'Maximalizovať',
+  'Close': 'Zavrieť',
+  'Hide panel': 'Skryť panel',
+  'New robot': 'Nový robot',
+  'Open…': 'Otvoriť…',
+  'Save as…': 'Uložiť ako…',
+  'Export to MATLAB (.m)': 'Exportovať do MATLABu (.m)',
+  'Export DH table (.csv)': 'Exportovať DH tabuľku (.csv)',
+  'Light theme': 'Svetlá téma',
+  'Dark theme': 'Tmavá téma',
+  'Drop to add to the end of the chain': 'Pusti a pridá sa na koniec reťazca',
+
+  // home
+  'Welcome to BeanyIK': 'Vitaj v BeanyIK',
+  'Build serial robots from parts, then solve their forward and inverse kinematics.': 'Poskladaj sériového robota z dielov a vyrieš jeho priamu a inverznú kinematiku.',
+  'Start building a robot': 'Začni stavať robota',
+  'Drag revolute and prismatic joints into a chain, describe each one with DH parameters or your own 4×4 matrix, then drag the target and watch the IK solver move it.': 'Pretiahni rotačné a posuvné kĺby do reťazca, popíš každý DH parametrami alebo vlastnou maticou 4×4, potom ťahaj cieľ a sleduj, ako ho IK riešič dosiahne.',
+  'Open file': 'Otvoriť súbor',
+  'Continue “{name}”': 'Pokračovať „{name}“',
+  'Start from a template': 'Začni zo šablóny',
+  '{n} joints · analytic IK included': '{n} kĺby · analytické IK priložené',
+  'Blank robot': 'Prázdny robot',
+  'Empty chain — drag parts in yourself': 'Prázdny reťazec — diely si dotiahni sám',
+  'Standard DH': 'Štandardné DH',
+  'Modified DH': 'Modifikované DH',
+  'Recent': 'Nedávne',
+  'Name': 'Názov',
+  'Opened': 'Otvorené',
+  'Location': 'Umiestnenie',
+  'Robots you save or open will show up here.': 'Tu sa zobrazia roboty, ktoré uložíš alebo otvoríš.',
+  'just now': 'práve teraz',
+  '{n} min ago': 'pred {n} min',
+  '{n} h ago': 'pred {n} h',
+
+  // presets
+  '6-DOF arm': '6-DOF rameno',
+  'Anthropomorphic arm with spherical wrist': 'Antropomorfné rameno so sférickým zápästím',
+  'Quadruped leg': 'Noha štvornohého robota',
+  'Hip abduction, hip flexion, knee': 'Abdukcia bedra, flexia bedra, koleno',
+  'Planar 2R': 'Rovinný 2R',
+  'The classic two-link arm': 'Klasické dvojčlánkové rameno',
+  'SCARA': 'SCARA',
+  'RRPR pick-and-place': 'RRPR manipulátor pick-and-place',
+
+  // tools panel
+  'All tools': 'Všetky nástroje',
+  'Build — drag into the chain': 'Stavba — pretiahni do reťazca',
+  'Revolute joint': 'Rotačný kĺb',
+  'Rotates about its z axis': 'Otáča sa okolo svojej osi z',
+  'Prismatic joint': 'Posuvný kĺb',
+  'Slides along its z axis': 'Posúva sa pozdĺž svojej osi z',
+  'Fixed link': 'Pevný článok',
+  'Rigid offset, no DOF': 'Pevný posun, bez DOF',
+  'Matrix joint': 'Maticový kĺb',
+  'Your own 4×4 transform': 'Vlastná transformácia 4×4',
+  'Drag into the chain or click to append': 'Pretiahni do reťazca alebo klikni pre pridanie',
+  'Analyze': 'Analýza',
+  'Inverse kinematics': 'Inverzná kinematika',
+  'Drag a target, solve q': 'Ťahaj cieľ, vyrieš q',
+  'Joint controls': 'Ovládanie kĺbov',
+  'Forward kinematics sliders': 'Posuvníky priamej kinematiky',
+  'Matrices & Jacobian': 'Matice a Jakobián',
+  'Aᵢ, ⁰Tₙ, J(q), singularities': 'Aᵢ, ⁰Tₙ, J(q), singularity',
+  'Analytic IK solver': 'Analytický IK riešič',
+  'Plug in your closed form': 'Vlož svoje riešenie v uzavretom tvare',
+  'Workspace': 'Pracovný priestor',
+  'Sample reachable points': 'Vzorkovanie dosiahnuteľných bodov',
+  'Templates': 'Šablóny',
+
+  // quick rail / view pill
+  'Select (Q)': 'Výber (Q)',
+  'Move IK target (W)': 'Posunúť IK cieľ (W)',
+  'Rotate IK target (E)': 'Otočiť IK cieľ (E)',
+  'Show frames (F)': 'Zobraziť súradnicové sústavy (F)',
+  'Workspace cloud': 'Mrak pracovného priestoru',
+  'Home pose (H)': 'Domovská poloha (H)',
+  'Iso': 'Izo',
+  'Front': 'Spredu',
+  'Side': 'Zboku',
+  'Top': 'Zhora',
+  'Zoom out': 'Oddialiť',
+  'Zoom in': 'Priblížiť',
+  'Fit robot': 'Prispôsobiť robotovi',
+
+  // HUD
+  'End effector': 'Koncový efektor',
+  'near singular': 'blízko singularity',
+
+  // panels
+  'Kinematic chain': 'Kinematický reťazec',
+  'Properties': 'Vlastnosti',
+  'Parameters': 'Parametre',
+  'Robot name': 'Názov robota',
+  'DH convention': 'DH konvencia',
+  'Standard (distal)': 'Štandardná (distálna)',
+  'Modified (Craig)': 'Modifikovaná (Craig)',
+  'Links & joints': 'Články a kĺby',
+  '{n} DOF': '{n} DOF',
+  'Base': 'Základňa',
+  'Tool / end effector': 'Nástroj / koncový efektor',
+  'Joint': 'Kĺb',
+  'Link': 'Článok',
+  'error': 'chyba',
+  'Duplicate': 'Duplikovať',
+  'Delete': 'Odstrániť',
+  'Drag a <b>Revolute</b>, <b>Prismatic</b>, <b>Fixed</b> or <b>Matrix</b> part here from <b>All tools</b>, or click one to append it.': 'Pretiahni sem <b>rotačný</b>, <b>posuvný</b>, <b>pevný</b> alebo <b>maticový</b> diel zo <b>Všetkých nástrojov</b>, alebo naň klikni a pridá sa.',
+  'Drag parts from the left to insert them anywhere in the chain. Drag the grip to reorder. Click a link in the 3D view to select it.': 'Diely zľava pretiahni kamkoľvek do reťazca. Ťahaním za úchyt meníš poradie. Kliknutím na článok v 3D ho vyberieš.',
+  'custom 4×4 transform': 'vlastná transformácia 4×4',
+  'Select a link in the chain or in the 3D view to edit it. Fields accept expressions — numbers, your parameters (<code>L1</code>), <code>pi</code>, <code>sqrt()</code>, <code>atan2()</code>…': 'Vyber článok v reťazci alebo v 3D a uprav ho. Polia prijímajú výrazy — čísla, tvoje parametre (<code>L1</code>), <code>pi</code>, <code>sqrt()</code>, <code>atan2()</code>…',
+  'Base frame (world → frame 0)': 'Sústava základne (svet → sústava 0)',
+  'Tool frame (flange → TCP)': 'Sústava nástroja (príruba → TCP)',
+  'Rotation is applied as R = Rz(yaw)·Ry(pitch)·Rx(roll).': 'Rotácia sa skladá ako R = Rz(yaw)·Ry(pitch)·Rx(roll).',
+  'Roll (x)': 'Roll (x)',
+  'Pitch (y)': 'Pitch (y)',
+  'Yaw (z)': 'Yaw (z)',
+  'Joint type': 'Typ kĺbu',
+  'Revolute': 'Rotačný',
+  'Prismatic': 'Posuvný',
+  'Fixed': 'Pevný',
+  'Defined by': 'Definovaný pomocou',
+  'DH parameters': 'DH parametrov',
+  'Custom matrix': 'Vlastnej matice',
+  'θ offset': 'θ posun',
+  'd offset': 'd posun',
+  'θ = q + offset.': 'θ = q + posun.',
+  'd = q + offset.': 'd = q + posun.',
+  'No joint variable.': 'Bez kĺbovej premennej.',
+  'Angles in degrees; expressions allowed.': 'Uhly v stupňoch; výrazy sú povolené.',
+  'Limits & home': 'Limity a domovská poloha',
+  'Min': 'Min',
+  'Max': 'Max',
+  'row {r}, col {c}': 'riadok {r}, stĺpec {c}',
+  'Entries may use <code>q</code> (this joint\'s variable: rad for revolute, m for prismatic), your parameters and functions like <code>cos</code>, <code>sin</code>. This is A<sub>{i}</sub>: frame {p} → frame {i}.': 'Prvky môžu používať <code>q</code> (premenná tohto kĺbu: rad pre rotačný, m pre posuvný), tvoje parametre a funkcie ako <code>cos</code>, <code>sin</code>. Toto je A<sub>{i}</sub>: sústava {p} → sústava {i}.',
+  'No movable joints yet. Add a revolute or prismatic joint from <b>All tools</b>.': 'Zatiaľ žiadne pohyblivé kĺby. Pridaj rotačný alebo posuvný kĺb zo <b>Všetkých nástrojov</b>.',
+  'Zero': 'Nula',
+  'Random': 'Náhodne',
+  'Goal': 'Cieľ',
+  'Position + orientation': 'Poloha + orientácia',
+  'Position only': 'Iba poloha',
+  'Target pose': 'Cieľová poloha',
+  'Use current': 'Použiť aktuálnu',
+  'Or drag the green target in the 3D view — <b>W</b> move, <b>E</b> rotate.': 'Alebo ťahaj zelený cieľ v 3D — <b>W</b> posun, <b>E</b> rotácia.',
+  'Follow target live (numerical)': 'Sledovať cieľ naživo (numericky)',
+  'Solve numerically': 'Vyriešiť numericky',
+  'Analytic': 'Analyticky',
+  'Numerical solver: damped least squares on the geometric Jacobian with joint limits and random restarts. Analytic solver: your closed-form equations in the <b>Analytic IK</b> panel; every branch is checked with forward kinematics.': 'Numerický riešič: tlmené najmenšie štvorce na geometrickom Jakobiáne s limitmi kĺbov a náhodnými reštartmi. Analytický riešič: tvoje rovnice v uzavretom tvare v paneli <b>Analytické IK</b>; každá vetva sa overí priamou kinematikou.',
+  'Converged': 'Konvergovalo',
+  'Best effort — target not reached': 'Najlepší pokus — cieľ nedosiahnutý',
+  'position error {p} mm · orientation error {o}° · {n} iterations': 'chyba polohy {p} mm · chyba orientácie {o}° · {n} iterácií',
+  ' · restarts used': ' · použité reštarty',
+  'Analytic solver returned no solutions (target out of reach?).': 'Analytický riešič nevrátil žiadne riešenie (cieľ mimo dosahu?).',
+  'Analytic solutions ({n})': 'Analytické riešenia ({n})',
+  'Branch {n}': 'Vetva {n}',
+  'reaches': 'dosiahne',
+  'misses': 'nedosiahne',
+  'outside limits': 'mimo limitov',
+  'Show': 'Zobraziť',
+  '⁰T_ee — base to end effector': '⁰T_ee — základňa po koncový efektor',
+  'Jacobian J(q) (6 × n)': 'Jakobián J(q) (6 × n)',
+  'All link matrices': 'Všetky matice článkov',
+  'Export': 'Export',
+  'Copy shown matrix (MATLAB)': 'Kopírovať zobrazenú maticu (MATLAB)',
+  'Export symbolic FK to MATLAB (.m)': 'Exportovať symbolickú FK do MATLABu (.m)',
+  'Copy DH table as LaTeX': 'Kopírovať DH tabuľku ako LaTeX',
+  'No movable joints.': 'Žiadne pohyblivé kĺby.',
+  'rows: v<sub>x</sub> v<sub>y</sub> v<sub>z</sub> ω<sub>x</sub> ω<sub>y</sub> ω<sub>z</sub> · columns: q₁…q{n}': 'riadky: v<sub>x</sub> v<sub>y</sub> v<sub>z</sub> ω<sub>x</sub> ω<sub>y</sub> ω<sub>z</sub> · stĺpce: q₁…q{n}',
+  'manipulability': 'manipulovateľnosť',
+  'The arm is at (or very near) a singularity — it loses a direction of motion here.': 'Rameno je v singularite (alebo veľmi blízko) — stráca tu jeden smer pohybu.',
+  'Fewer than 6 DOF: manipulability uses the 3 linear rows. ': 'Menej ako 6 DOF: manipulovateľnosť používa 3 lineárne riadky. ',
+  'Computed numerically, so it works for custom-matrix joints too.': 'Počítané numericky, takže funguje aj pre maticové kĺby.',
+  'Named constants used anywhere in the robot — link lengths, offsets… Later parameters can use earlier ones (e.g. <code>L3 = L1 + L2</code>).': 'Pomenované konštanty použiteľné kdekoľvek v robotovi — dĺžky článkov, posuny… Neskoršie parametre môžu použiť skoršie (napr. <code>L3 = L1 + L2</code>).',
+  'name': 'názov',
+  'value / expression': 'hodnota / výraz',
+  'Remove': 'Odstrániť',
+  'No parameters yet.': 'Zatiaľ žiadne parametre.',
+  'Add parameter': 'Pridať parameter',
+  'Expression reference': 'Prehľad výrazov',
+  'Operators <code>+ - * / ^</code>, constants <code>pi</code> <code>e</code>.<br>Functions:': 'Operátory <code>+ - * / ^</code>, konštanty <code>pi</code> <code>e</code>.<br>Funkcie:',
+  'Notes': 'Poznámky',
+  'Anything worth remembering about this robot…': 'Čokoľvek, čo si chceš o tomto robotovi zapamätať…',
+  'Write your closed-form inverse kinematics here (JavaScript). The function receives the target flange pose <code>T</code>, your parameters <code>P</code> and helpers <code>h</code>, and returns all solution branches.': 'Sem napíš svoju inverznú kinematiku v uzavretom tvare (JavaScript). Funkcia dostane cieľovú polohu príruby <code>T</code>, tvoje parametre <code>P</code> a pomocné funkcie <code>h</code> a vráti všetky vetvy riešenia.',
+  'Test on current pose': 'Otestovať na aktuálnej polohe',
+  'Insert template': 'Vložiť šablónu',
+  '{n} branch(es) returned, <b>{ok}</b> reproduce the current end-effector pose': 'Vrátených vetiev: {n}, <b>{ok}</b> z nich reprodukuje aktuálnu polohu koncového efektora',
+  ', including the current joint configuration': ', vrátane aktuálnej konfigurácie kĺbov',
+
+  // toasts / dialogs
+  'Added {what}': 'Pridané: {what}',
+  'Add a movable joint first': 'Najprv pridaj pohyblivý kĺb',
+  'Workspace sampled — random joint configurations within limits': 'Pracovný priestor navzorkovaný — náhodné konfigurácie v rámci limitov',
+  'Not a valid robot file': 'Neplatný súbor robota',
+  'Not a BeanyIK robot file': 'Toto nie je súbor robota BeanyIK',
+  'Opened {name}': 'Otvorené: {name}',
+  'Saved': 'Uložené',
+  'Exported {name}': 'Exportované: {name}',
+  'Copied as MATLAB matrix': 'Skopírované ako MATLAB matica',
+  'DH table copied as LaTeX': 'DH tabuľka skopírovaná ako LaTeX',
+  'Copied': 'Skopírované',
+  "Can't open: {err}": 'Nedá sa otvoriť: {err}',
+  'You have unsaved changes. Discard them?': 'Máš neuložené zmeny. Zahodiť ich?',
+  'Untitled robot': 'Nepomenovaný robot',
+};
+
+const DICTS = { en: {}, sk: SK };
+export const LANGUAGES = [
+  { id: 'en', label: 'English' },
+  { id: 'sk', label: 'Slovenčina' },
+];
+
+let lang = 'en';
+try { lang = localStorage.getItem('beanyik_lang') || (navigator.language?.startsWith('sk') ? 'sk' : 'en'); } catch { /* ignore */ }
+if (!DICTS[lang]) lang = 'en';
+
+export function getLang() { return lang; }
+
+export function setLang(next) {
+  lang = DICTS[next] ? next : 'en';
+  try { localStorage.setItem('beanyik_lang', lang); } catch { /* ignore */ }
+  document.documentElement.lang = lang;
+}
+
+export function t(key, vars) {
+  let s = DICTS[lang][key] ?? key;
+  if (vars) s = s.replace(/\{(\w+)\}/g, (m, k) => (k in vars ? vars[k] : m));
+  return s;
+}
+
+// Static markup: data-i18n (text), data-i18n-title (title attribute).
+export function translateStatic(root = document) {
+  root.querySelectorAll('[data-i18n]').forEach((el) => {
+    if (!el.dataset.i18nKey) el.dataset.i18nKey = el.dataset.i18n;
+    el.textContent = t(el.dataset.i18nKey);
+  });
+  root.querySelectorAll('[data-i18n-title]').forEach((el) => { el.title = t(el.dataset.i18nTitle); });
+  document.documentElement.lang = lang;
+}

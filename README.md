@@ -37,6 +37,11 @@ a floating quick-tools rail beside the canvas, and an icon rail on the right tha
 </p>
 <p align="center"><i>Quadruped leg in the dark theme, showing the Jacobian, manipulability and a sampled workspace cloud.</i></p>
 
+<p align="center">
+  <img src="docs/screenshots/slovak.png" alt="SCARA with joint sliders, Slovak UI" width="900">
+</p>
+<p align="center"><i>SCARA with joint sliders, in the Slovak UI.</i></p>
+
 ## Features
 
 - **Drag & drop chain builder.** Drag *Revolute*, *Prismatic*, *Fixed link* or *Matrix joint* parts from
@@ -58,6 +63,7 @@ a floating quick-tools rail beside the canvas, and an icon rail on the right tha
 - **Workspace cloud**: samples random configurations within the joint limits.
 - **Export**: symbolic FK + Jacobian as a MATLAB `.m` script (Symbolic Math Toolbox), DH table as CSV or
   LaTeX, and any matrix as MATLAB.
+- **English & Slovak UI.** Switch with the 🌐 EN/SK button in the top bar (Slovenčina is picked automatically on a Slovak system).
 - Robots save as readable `.robot.json`. Also included: undo/redo, recent files, autosave and light/dark themes.
 
 ### Templates
@@ -130,7 +136,8 @@ Hit **Test on current pose**, or use **Analytic** in the IK panel to solve for t
 
 ## Built with
 
-Electron, [three.js](https://threejs.org) (vendored), and no other runtime dependencies. The kinematics core
+Electron, [three.js](https://threejs.org) (vendored), and no other runtime dependencies. UI strings live in
+`renderer/js/i18n.js`: English text is the key, so adding a language means adding one dictionary. The kinematics core
 (`renderer/js/core`) is plain ES modules with no DOM access, so it runs under Node for the self-test.
 
 ## License

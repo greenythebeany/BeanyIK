@@ -143,6 +143,12 @@ input, select, textarea { font: inherit; color: var(--text); }
 .icon-btn.small .ico { width: 18px; height: 18px; }
 .icon-btn.danger:hover { color: var(--err); background: var(--err-soft); }
 
+.lang-btn {
+  height: 32px; display: inline-flex; align-items: center; gap: 5px; padding: 0 8px; border: none; background: none;
+  border-radius: 6px; cursor: pointer; color: var(--text-2); font-weight: 700; font-size: 12px;
+}
+.lang-btn .ico { width: 18px; height: 18px; }
+.lang-btn:hover { background: var(--bg-hover); color: var(--text); }
 .win-buttons { display: flex; height: 100%; margin-left: 8px; }
 .win-btn { width: 46px; height: 100%; display: flex; align-items: center; justify-content: center; border: none; background: none; cursor: pointer; color: var(--text-2); }
 .win-btn .ico { width: 16px; height: 16px; }

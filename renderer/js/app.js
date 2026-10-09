@@ -9,6 +9,7 @@ import { toMatlab, dhTableCSV, dhTableLatex, matrixToText, matrixToMatlab } from
 import { FUNCTION_NAMES } from './core/expr.js';
 import { icon, glyph, hydrateIcons } from './icons.js';
 import { Viewport } from './viewport.js';
+import { t, getLang, setLang, translateStatic } from './i18n.js';
 
 const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
@@ -84,7 +85,7 @@ function setQ(q) {
 }
 
 function jointLabel(j, i) {
-  return j.name || `${j.type === 'fixed' ? 'Link' : 'Joint'} ${i + 1}`;
+  return j.name || `${t(j.type === 'fixed' ? 'Link' : 'Joint')} ${i + 1}`;
 }
 
 function errorsFor(id) {
@@ -201,7 +202,7 @@ function showView(view) {
 
 function refresh({ panel = false, scene = true } = {}) {
   state.prep = prepare(state.robot);
-  $('#doc-title').textContent = state.robot.name || 'Untitled robot';
+  $('#doc-title').textContent = state.robot.name || t('Untitled robot');
   document.title = `${state.robot.name} — BeanyIK`;
   if (scene) updateScene();
   renderRail();
@@ -237,10 +238,10 @@ function renderHud() {
     const rows = state.prep.dof >= 6 ? 6 : 3;
     const m = manipulability(J, rows);
     const singular = m.sv[m.sv.length - 1] < 1e-3;
-    manip = singular ? '<span class="badge warn">near singular</span>' : `<span class="badge info">w = ${m.w.toExponential(2)}</span>`;
+    manip = singular ? `<span class="badge warn">${t('near singular')}</span>` : `<span class="badge info">w = ${m.w.toExponential(2)}</span>`;
   }
   $('#hud').innerHTML = `
-    <div class="hud-title">End effector ${manip}</div>
+    <div class="hud-title">${t('End effector')} ${manip}</div>
     <div class="hud-grid">
       <span class="k x">x</span><span>${fmt(T[0][3])}</span>
       <span class="k y">y</span><span>${fmt(T[1][3])}</span>
@@ -268,7 +269,7 @@ function insertJoint(kind, index = state.robot.joints.length) {
   markDirty();
   refresh({ panel: true });
   if (state.panel !== 'chain' && state.panel !== 'props') openPanel('props');
-  toast(`Added ${PART_TYPES.find((p) => p.kind === kind)?.name.toLowerCase() || 'joint'}`, 'info');
+  toast(t('Added {what}', { what: t(PART_TYPES.find((p) => p.kind === kind)?.name || 'Joint').toLowerCase() }), 'info');
 }
 
 function moveJoint(id, toIndex) {
@@ -369,14 +370,14 @@ function openPanel(id) {
 function renderRail() {
   const errCount = Object.keys(state.prep?.errors || {}).length;
   $('#right-rail').innerHTML = PANELS.map((p) => `
-    <button class="rail-btn ${state.panelOpen && state.panel === p.id ? 'on' : ''}" data-panel="${p.id}" data-tip="${p.title}">
+    <button class="rail-btn ${state.panelOpen && state.panel === p.id ? 'on' : ''}" data-panel="${p.id}" data-tip="${t(p.title)}">
       ${icon(p.icon)}${p.id === 'chain' && errCount ? `<span class="count">${errCount}</span>` : ''}
     </button>`).join('');
 }
 
 function renderPanel() {
   const p = PANELS.find((x) => x.id === state.panel);
-  $('#side-title').textContent = p.title;
+  $('#side-title').textContent = t(p.title);
   const body = $('#side-body');
   const scroll = body.scrollTop;
   const renderers = { chain: renderChain, props: renderProps, joints: renderJoints, ik: renderIK, matrices: renderMatrices, params: renderParams, code: renderCode };
@@ -390,7 +391,7 @@ function renderPanel() {
 }
 
 function dhSummary(j) {
-  if (j.mode === 'matrix') return 'custom 4×4 transform';
+  if (j.mode === 'matrix') return t('custom 4×4 transform');
   const th = j.type === 'revolute' ? (j.dh.theta && j.dh.theta !== '0' ? `q+${j.dh.theta}°` : 'q') : `${j.dh.theta}°`;
   const d = j.type === 'prismatic' ? (j.dh.d && j.dh.d !== '0' ? `q+${j.dh.d}` : 'q') : j.dh.d;
   return `θ=${th}  d=${d}  a=${j.dh.a}  α=${j.dh.alpha}°`;
@@ -412,12 +413,12 @@ function renderChain() {
         <span class="grip">${icon('grip')}</span>
         <span class="tile sm ${tile}">${glyph(g)}</span>
         <div class="node-text">
-          <div class="node-name">${esc(jointLabel(j, i))} <span class="node-idx">#${i + 1}</span>${hasErr ? `<span class="badge err">${icon('warn')}error</span>` : ''}</div>
+          <div class="node-name">${esc(jointLabel(j, i))} <span class="node-idx">#${i + 1}</span>${hasErr ? `<span class="badge err">${icon('warn')}${t('error')}</span>` : ''}</div>
           <div class="node-sub">${esc(dhSummary(j))}</div>
         </div>
         <div class="node-actions">
-          <button class="icon-btn small" data-act="dup" data-id="${j.id}" title="Duplicate">${icon('copy')}</button>
-          <button class="icon-btn small danger" data-act="del" data-id="${j.id}" title="Delete">${icon('trash')}</button>
+          <button class="icon-btn small" data-act="dup" data-id="${j.id}" title="${t('Duplicate')}">${icon('copy')}</button>
+          <button class="icon-btn small danger" data-act="del" data-id="${j.id}" title="${t('Delete')}">${icon('trash')}</button>
         </div>
       </div>`;
   }).join('');
@@ -430,24 +431,24 @@ function renderChain() {
   const poseSub = (p) => `xyz(${p.x}, ${p.y}, ${p.z})  rpy(${p.roll}°, ${p.pitch}°, ${p.yaw}°)`;
   return `
     <div class="section">
-      <div class="field"><label>Robot name</label><input class="input" data-bind="robot.name" value="${esc(r.name)}"></div>
+      <div class="field"><label>${t('Robot name')}</label><input class="input" data-bind="robot.name" value="${esc(r.name)}"></div>
     </div>
     <div class="section">
-      <div class="section-title">DH convention</div>
+      <div class="section-title">${t('DH convention')}</div>
       <div class="segmented" data-seg="convention">
-        <button class="${r.convention === 'standard' ? 'on' : ''}" data-val="standard">Standard (distal)</button>
-        <button class="${r.convention === 'modified' ? 'on' : ''}" data-val="modified">Modified (Craig)</button>
+        <button class="${r.convention === 'standard' ? 'on' : ''}" data-val="standard">${t('Standard (distal)')}</button>
+        <button class="${r.convention === 'modified' ? 'on' : ''}" data-val="modified">${t('Modified (Craig)')}</button>
       </div>
     </div>
     <div class="section">
-      <div class="section-title">Links & joints <span class="grow"></span><span class="badge info">${state.prep.dof} DOF</span></div>
+      <div class="section-title">${t('Links & joints')} <span class="grow"></span><span class="badge info">${t('{n} DOF', { n: state.prep.dof })}</span></div>
       <div class="chain" id="chain">
-        ${special('base', 'Base', poseSub(r.base), 'base')}
-        ${r.joints.length ? nodes + `<div class="chain-gap" data-gap="${r.joints.length}"></div>` : `<div class="chain-gap"></div><div class="chain-empty" data-gap="0">Drag a <b>Revolute</b>, <b>Prismatic</b>, <b>Fixed</b> or <b>Matrix</b> part here from <b>All tools</b>, or click one to append it.</div><div class="chain-gap"></div>`}
-        ${special('tool', 'Tool / end effector', poseSub(r.tool), 'tool')}
+        ${special('base', t('Base'), poseSub(r.base), 'base')}
+        ${r.joints.length ? nodes + `<div class="chain-gap" data-gap="${r.joints.length}"></div>` : `<div class="chain-gap"></div><div class="chain-empty" data-gap="0">${t('Drag a <b>Revolute</b>, <b>Prismatic</b>, <b>Fixed</b> or <b>Matrix</b> part here from <b>All tools</b>, or click one to append it.')}</div><div class="chain-gap"></div>`}
+        ${special('tool', t('Tool / end effector'), poseSub(r.tool), 'tool')}
       </div>
     </div>
-    <p class="hint">Drag parts from the left to insert them anywhere in the chain. Drag the grip to reorder. Click a link in the 3D view to select it.</p>`;
+    <p class="hint">${t('Drag parts from the left to insert them anywhere in the chain. Drag the grip to reorder. Click a link in the 3D view to select it.')}</p>`;
 }
 
 function poseFields(key) {
@@ -455,21 +456,21 @@ function poseFields(key) {
   const f = (k, label, unit) => `<div class="field"><label class="label">${label}<span class="unit">${unit}</span></label><input class="input mono" data-bind="${key}.${k}" value="${esc(p[k])}"><div class="field-error" data-err="${key}.${k}"></div></div>`;
   return `
     <div class="grid3">${f('x', 'x', 'm')}${f('y', 'y', 'm')}${f('z', 'z', 'm')}</div>
-    <div class="grid3" style="margin-top:10px">${f('roll', 'Roll (x)', 'deg')}${f('pitch', 'Pitch (y)', 'deg')}${f('yaw', 'Yaw (z)', 'deg')}</div>`;
+    <div class="grid3" style="margin-top:10px">${f('roll', t('Roll (x)'), 'deg')}${f('pitch', t('Pitch (y)'), 'deg')}${f('yaw', t('Yaw (z)'), 'deg')}</div>`;
 }
 
 function renderProps() {
   const sel = state.selected;
   if (!sel) {
-    return `<div class="notice info">${icon('info')}<div>Select a link in the chain or in the 3D view to edit it. Fields accept expressions — numbers, your parameters (<code>L1</code>), <code>pi</code>, <code>sqrt()</code>, <code>atan2()</code>…</div></div>`;
+    return `<div class="notice info">${icon('info')}<div>${t('Select a link in the chain or in the 3D view to edit it. Fields accept expressions — numbers, your parameters (<code>L1</code>), <code>pi</code>, <code>sqrt()</code>, <code>atan2()</code>…')}</div></div>`;
   }
   if (sel === 'base' || sel === 'tool') {
     return `
       <div class="section">
-        <div class="section-title">${sel === 'base' ? 'Base frame (world → frame 0)' : 'Tool frame (flange → TCP)'}</div>
+        <div class="section-title">${t(sel === 'base' ? 'Base frame (world → frame 0)' : 'Tool frame (flange → TCP)')}</div>
         ${poseFields(sel)}
       </div>
-      <p class="hint">Rotation is applied as R = Rz(yaw)·Ry(pitch)·Rx(roll).</p>`;
+      <p class="hint">${t('Rotation is applied as R = Rz(yaw)·Ry(pitch)·Rx(roll).')}</p>`;
   }
   const j = getJoint(sel);
   if (!j) return '';
@@ -483,66 +484,66 @@ function renderProps() {
       <div class="field-error" data-err="${j.id}.${k}"></div>${hint ? `<div class="hint">${hint}</div>` : ''}</div>`;
   const matrixEditor = () => `
     <div class="matrix-edit">
-      ${j.matrix.map((row, r) => row.map((c, k) => `<input class="input mono" data-bind="joint:${j.id}.matrix.${r}.${k}" data-errkey="${j.id}.m${r}${k}" value="${esc(c)}" spellcheck="false" title="row ${r + 1}, col ${k + 1}">`).join('')).join('')}
+      ${j.matrix.map((row, r) => row.map((c, k) => `<input class="input mono" data-bind="joint:${j.id}.matrix.${r}.${k}" data-errkey="${j.id}.m${r}${k}" value="${esc(c)}" spellcheck="false" title="${t('row {r}, col {c}', { r: r + 1, c: k + 1 })}">`).join('')).join('')}
       ${['0', '0', '0', '1'].map((v) => `<div class="fixed-cell">${v}</div>`).join('')}
     </div>
     <div class="field-error" data-err="${j.id}.matrix"></div>
-    <p class="hint">Entries may use <code>q</code> (this joint's variable: rad for revolute, m for prismatic), your parameters and functions like <code>cos</code>, <code>sin</code>. This is A<sub>i</sub>: frame ${i} → frame ${i + 1}.</p>`;
+    <p class="hint">${t("Entries may use <code>q</code> (this joint's variable: rad for revolute, m for prismatic), your parameters and functions like <code>cos</code>, <code>sin</code>. This is A<sub>{i}</sub>: frame {p} → frame {i}.", { i: i + 1, p: i })}</p>`;
   return `
     <div class="section">
-      <div class="field"><label>Name</label><input class="input" data-bind="joint:${j.id}.name" value="${esc(j.name)}" placeholder="${esc(jointLabel(j, i))}"></div>
+      <div class="field"><label>${t('Name')}</label><input class="input" data-bind="joint:${j.id}.name" value="${esc(j.name)}" placeholder="${esc(jointLabel(j, i))}"></div>
     </div>
     <div class="section">
-      <div class="section-title">Joint type</div>
+      <div class="section-title">${t('Joint type')}</div>
       <div class="segmented" data-seg="type">
-        <button class="${j.type === 'revolute' ? 'on' : ''}" data-val="revolute">Revolute</button>
-        <button class="${j.type === 'prismatic' ? 'on' : ''}" data-val="prismatic">Prismatic</button>
-        <button class="${j.type === 'fixed' ? 'on' : ''}" data-val="fixed">Fixed</button>
+        <button class="${j.type === 'revolute' ? 'on' : ''}" data-val="revolute">${t('Revolute')}</button>
+        <button class="${j.type === 'prismatic' ? 'on' : ''}" data-val="prismatic">${t('Prismatic')}</button>
+        <button class="${j.type === 'fixed' ? 'on' : ''}" data-val="fixed">${t('Fixed')}</button>
       </div>
     </div>
     <div class="section">
-      <div class="section-title">Defined by</div>
+      <div class="section-title">${t('Defined by')}</div>
       <div class="segmented" data-seg="mode">
-        <button class="${j.mode === 'dh' ? 'on' : ''}" data-val="dh">DH parameters</button>
-        <button class="${j.mode === 'matrix' ? 'on' : ''}" data-val="matrix">Custom matrix</button>
+        <button class="${j.mode === 'dh' ? 'on' : ''}" data-val="dh">${t('DH parameters')}</button>
+        <button class="${j.mode === 'matrix' ? 'on' : ''}" data-val="matrix">${t('Custom matrix')}</button>
       </div>
     </div>
     <div class="section">
       ${j.mode === 'dh' ? `
-        <div class="section-title">${modified ? 'Modified DH · Rx(α) Tx(a) Rz(θ) Tz(d)' : 'Standard DH · Rz(θ) Tz(d) Tx(a) Rx(α)'}</div>
+        <div class="section-title">${t(modified ? 'Modified DH' : 'Standard DH')} · ${modified ? 'Rx(α) Tx(a) Rz(θ) Tz(d)' : 'Rz(θ) Tz(d) Tx(a) Rx(α)'}</div>
         <div class="grid2">
-          ${dhField('theta', j.type === 'revolute' ? 'θ offset' : 'θ', angUnit)}
-          ${dhField('d', j.type === 'prismatic' ? 'd offset' : 'd', 'm')}
+          ${dhField('theta', j.type === 'revolute' ? t('θ offset') : 'θ', angUnit)}
+          ${dhField('d', j.type === 'prismatic' ? t('d offset') : 'd', 'm')}
           ${dhField('a', modified ? 'a (i−1)' : 'a', 'm')}
           ${dhField('alpha', modified ? 'α (i−1)' : 'α', angUnit)}
         </div>
-        <p class="hint">${j.type === 'revolute' ? 'θ = q + offset.' : j.type === 'prismatic' ? 'd = q + offset.' : 'No joint variable.'} Angles in degrees; expressions allowed.</p>`
+        <p class="hint">${t(j.type === 'revolute' ? 'θ = q + offset.' : j.type === 'prismatic' ? 'd = q + offset.' : 'No joint variable.')} ${t('Angles in degrees; expressions allowed.')}</p>`
       : matrixEditor()}
     </div>
     ${isActive(j) ? `
     <div class="section">
-      <div class="section-title">Limits & home</div>
+      <div class="section-title">${t('Limits & home')}</div>
       <div class="grid3">
-        <div class="field"><label class="label">Min<span class="unit">${lim}</span></label><input class="input mono" data-bind="joint:${j.id}.min" value="${esc(j.min)}"><div class="field-error" data-err="${j.id}.min"></div></div>
-        <div class="field"><label class="label">Max<span class="unit">${lim}</span></label><input class="input mono" data-bind="joint:${j.id}.max" value="${esc(j.max)}"><div class="field-error" data-err="${j.id}.max"></div></div>
-        <div class="field"><label class="label">Home<span class="unit">${lim}</span></label><input class="input mono" data-bind="joint:${j.id}.home" value="${esc(j.home)}"><div class="field-error" data-err="${j.id}.home"></div></div>
+        <div class="field"><label class="label">${t('Min')}<span class="unit">${lim}</span></label><input class="input mono" data-bind="joint:${j.id}.min" value="${esc(j.min)}"><div class="field-error" data-err="${j.id}.min"></div></div>
+        <div class="field"><label class="label">${t('Max')}<span class="unit">${lim}</span></label><input class="input mono" data-bind="joint:${j.id}.max" value="${esc(j.max)}"><div class="field-error" data-err="${j.id}.max"></div></div>
+        <div class="field"><label class="label">${t('Home')}<span class="unit">${lim}</span></label><input class="input mono" data-bind="joint:${j.id}.home" value="${esc(j.home)}"><div class="field-error" data-err="${j.id}.home"></div></div>
       </div>
     </div>` : ''}
     <div class="divider"></div>
     <div class="row">
-      <button class="btn btn-sm" data-act="dup" data-id="${j.id}">${icon('copy')}Duplicate</button>
-      <button class="btn btn-sm" data-act="del" data-id="${j.id}">${icon('trash')}Delete</button>
+      <button class="btn btn-sm" data-act="dup" data-id="${j.id}">${icon('copy')}${t('Duplicate')}</button>
+      <button class="btn btn-sm" data-act="del" data-id="${j.id}">${icon('trash')}${t('Delete')}</button>
     </div>`;
 }
 
 function renderJoints() {
   const links = state.prep.activeLinks;
-  if (!links.length) return `<div class="notice info">${icon('info')}<div>No movable joints yet. Add a revolute or prismatic joint from <b>All tools</b>.</div></div>`;
+  if (!links.length) return `<div class="notice info">${icon('info')}<div>${t('No movable joints yet. Add a revolute or prismatic joint from <b>All tools</b>.')}</div></div>`;
   return `
     <div class="row" style="margin-bottom:6px">
-      <button class="btn btn-sm" data-act="home">${icon('home2')}Home</button>
-      <button class="btn btn-sm" data-act="zero">Zero</button>
-      <button class="btn btn-sm" data-act="random">${icon('dice')}Random</button>
+      <button class="btn btn-sm" data-act="home">${icon('home2')}${t('Home')}</button>
+      <button class="btn btn-sm" data-act="zero">${t('Zero')}</button>
+      <button class="btn btn-sm" data-act="random">${icon('dice')}${t('Random')}</button>
     </div>
     ${links.map((l, i) => {
       const j = l.joint;
@@ -576,35 +577,35 @@ function syncJointSliders() {
 }
 
 function renderIK() {
-  const t = state.ik.target || lastFK.ee;
-  const { roll, pitch, yaw } = M.toRPY(t);
+  const tg = state.ik.target || lastFK.ee;
+  const { roll, pitch, yaw } = M.toRPY(tg);
   const num = (k, v, unit) => `<div class="field"><label class="label">${k}<span class="unit">${unit}</span></label><input class="input mono" data-tgt="${k}" value="${fmt(v, unit === 'deg' ? 2 : 4)}"></div>`;
   const hasAnalytic = !!state.robot.analyticIK?.trim();
   return `
     <div class="section">
-      <div class="section-title">Goal</div>
+      <div class="section-title">${t('Goal')}</div>
       <div class="segmented" data-seg="ikmode">
-        <button class="${state.ik.mode === 'full' ? 'on' : ''}" data-val="full">Position + orientation</button>
-        <button class="${state.ik.mode === 'position' ? 'on' : ''}" data-val="position">Position only</button>
+        <button class="${state.ik.mode === 'full' ? 'on' : ''}" data-val="full">${t('Position + orientation')}</button>
+        <button class="${state.ik.mode === 'position' ? 'on' : ''}" data-val="position">${t('Position only')}</button>
       </div>
     </div>
     <div class="section">
-      <div class="section-title">Target pose <span class="grow"></span><button class="btn btn-sm btn-quiet" data-act="tgt-ee">${icon('target')}Use current</button></div>
-      <div class="grid3">${num('x', t[0][3], 'm')}${num('y', t[1][3], 'm')}${num('z', t[2][3], 'm')}</div>
+      <div class="section-title">${t('Target pose')} <span class="grow"></span><button class="btn btn-sm btn-quiet" data-act="tgt-ee">${icon('target')}${t('Use current')}</button></div>
+      <div class="grid3">${num('x', tg[0][3], 'm')}${num('y', tg[1][3], 'm')}${num('z', tg[2][3], 'm')}</div>
       <div class="grid3" style="margin-top:10px">${num('roll', roll / M.DEG, 'deg')}${num('pitch', pitch / M.DEG, 'deg')}${num('yaw', yaw / M.DEG, 'deg')}</div>
-      <p class="hint">Or drag the green target in the 3D view — <b>W</b> move, <b>E</b> rotate.</p>
+      <p class="hint">${t('Or drag the green target in the 3D view — <b>W</b> move, <b>E</b> rotate.')}</p>
     </div>
     <div class="section">
-      <label class="switch"><input type="checkbox" data-act="ik-live" ${state.ik.live ? 'checked' : ''}><span class="track"></span>Follow target live (numerical)</label>
+      <label class="switch"><input type="checkbox" data-act="ik-live" ${state.ik.live ? 'checked' : ''}><span class="track"></span>${t('Follow target live (numerical)')}</label>
     </div>
     <div class="row">
-      <button class="btn btn-primary" data-act="ik-num">${icon('play')}Solve numerically</button>
-      <button class="btn" data-act="ik-ana" ${hasAnalytic ? '' : 'disabled'}>${icon('sparkle')}Analytic</button>
+      <button class="btn btn-primary" data-act="ik-num">${icon('play')}${t('Solve numerically')}</button>
+      <button class="btn" data-act="ik-ana" ${hasAnalytic ? '' : 'disabled'}>${icon('sparkle')}${t('Analytic')}</button>
     </div>
     <div id="ik-status" style="margin-top:14px"></div>
     <div id="ik-solutions" class="stack" style="margin-top:12px"></div>
     <div class="divider"></div>
-    <p class="hint">Numerical solver: damped least squares on the geometric Jacobian with joint limits and random restarts. Analytic solver: your closed-form equations in the <b>Analytic IK</b> panel; every branch is checked with forward kinematics.</p>`;
+    <p class="hint">${t('Numerical solver: damped least squares on the geometric Jacobian with joint limits and random restarts. Analytic solver: your closed-form equations in the <b>Analytic IK</b> panel; every branch is checked with forward kinematics.')}</p>`;
 }
 
 function renderIKStatus() {
@@ -613,40 +614,40 @@ function renderIKStatus() {
   const r = state.ik.result;
   if (r) {
     const cls = r.ok ? 'ok' : 'warn';
-    el.innerHTML = `<div class="notice ${cls}">${icon(r.ok ? 'check' : 'warn')}<div><b>${r.ok ? 'Converged' : 'Best effort — target not reached'}</b><br>
-      position error ${(r.posErr * 1000).toFixed(3)} mm · orientation error ${(r.rotErr / M.DEG).toFixed(3)}° · ${r.iterations} iterations${r.restartsUsed ? ' · restarts used' : ''}</div></div>`;
+    el.innerHTML = `<div class="notice ${cls}">${icon(r.ok ? 'check' : 'warn')}<div><b>${t(r.ok ? 'Converged' : 'Best effort — target not reached')}</b><br>
+      ${t('position error {p} mm · orientation error {o}° · {n} iterations', { p: (r.posErr * 1000).toFixed(3), o: (r.rotErr / M.DEG).toFixed(3), n: r.iterations })}${r.restartsUsed ? t(' · restarts used') : ''}</div></div>`;
   } else el.innerHTML = '';
   const sl = $('#ik-solutions');
   const a = state.ik.analytic;
   if (!sl) return;
   if (!a) { sl.innerHTML = ''; return; }
   if (a.error) { sl.innerHTML = `<div class="notice err">${icon('warn')}<div>${esc(a.error)}</div></div>`; return; }
-  if (!a.solutions.length) { sl.innerHTML = `<div class="notice warn">${icon('warn')}<div>Analytic solver returned no solutions (target out of reach?).</div></div>`; return; }
+  if (!a.solutions.length) { sl.innerHTML = `<div class="notice warn">${icon('warn')}<div>${t('Analytic solver returned no solutions (target out of reach?).')}</div></div>`; return; }
   const links = state.prep.activeLinks;
-  sl.innerHTML = `<div class="section-title">Analytic solutions (${a.solutions.length})</div>` + a.solutions.map((s, i) => `
+  sl.innerHTML = `<div class="section-title">${t('Analytic solutions ({n})', { n: a.solutions.length })}</div>` + a.solutions.map((s, i) => `
     <div class="solution" data-sol="${i}">
-      <div class="sol-head">Branch ${i + 1}
-        ${s.ok ? '<span class="badge ok">reaches</span>' : `<span class="badge err">${esc(s.reason || 'misses')}</span>`}
-        ${s.ok && !s.inLimits ? '<span class="badge warn">outside limits</span>' : ''}</div>
+      <div class="sol-head">${t('Branch {n}', { n: i + 1 })}
+        ${s.ok ? `<span class="badge ok">${t('reaches')}</span>` : `<span class="badge err">${esc(s.reason || t('misses'))}</span>`}
+        ${s.ok && !s.inLimits ? `<span class="badge warn">${t('outside limits')}</span>` : ''}</div>
       <div class="sol-q">${s.q.map((v, k) => `<span>q${k + 1}=${links[k] ? fmt(toDisplay(links[k].joint, v), links[k].joint.type === 'revolute' ? 1 : 4) : fmt(v)}${links[k]?.joint.type === 'revolute' ? '°' : ''}</span>`).join('')}</div>
     </div>`).join('');
 }
 
 function renderMatrices() {
-  const opts = [['total', `⁰T_ee — base to end effector`], ['jacobian', 'Jacobian J(q) (6 × n)']];
+  const opts = [['total', t('⁰T_ee — base to end effector')], ['jacobian', t('Jacobian J(q) (6 × n)')]];
   state.robot.joints.forEach((j, i) => opts.push([`A${i}`, `A${i + 1} — ${jointLabel(j, i)}`]));
-  opts.push(['all', 'All link matrices']);
+  opts.push(['all', t('All link matrices')]);
   return `
-    <div class="field"><label>Show</label>
+    <div class="field"><label>${t('Show')}</label>
       <select class="input" data-act="matrix-view">${opts.map(([v, l]) => `<option value="${v}" ${state.matrixView === v ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select></div>
     <div id="matrix-body" style="margin-top:8px"></div>
     <div class="divider"></div>
-    <div class="section-title">Export</div>
+    <div class="section-title">${t('Export')}</div>
     <div class="stack">
-      <button class="btn btn-sm" data-act="copy-matrix">${icon('copy')}Copy shown matrix (MATLAB)</button>
-      <button class="btn btn-sm" data-act="export-matlab">${icon('export')}Export symbolic FK to MATLAB (.m)</button>
-      <button class="btn btn-sm" data-act="export-latex">${icon('copy')}Copy DH table as LaTeX</button>
-      <button class="btn btn-sm" data-act="export-csv">${icon('export')}Export DH table (.csv)</button>
+      <button class="btn btn-sm" data-act="copy-matrix">${icon('copy')}${t('Copy shown matrix (MATLAB)')}</button>
+      <button class="btn btn-sm" data-act="export-matlab">${icon('export')}${t('Export symbolic FK to MATLAB (.m)')}</button>
+      <button class="btn btn-sm" data-act="export-latex">${icon('copy')}${t('Copy DH table as LaTeX')}</button>
+      <button class="btn btn-sm" data-act="export-csv">${icon('export')}${t('Export DH table (.csv)')}</button>
     </div>`;
 }
 
@@ -675,20 +676,20 @@ function renderMatricesBody() {
     html = lastFK.A.map((A, i) => `<div class="matrix-caption"><b>A${i + 1}</b> ${esc(jointLabel(state.robot.joints[i], i))}</div>${matrixHTML(A)}`).join('')
       + `<div class="matrix-caption"><b>⁰T_ee</b> = T_base · A₁ ⋯ Aₙ · T_tool</div>${matrixHTML(lastFK.ee)}`;
   } else if (v === 'jacobian') {
-    if (!state.prep.dof) html = `<div class="notice info">${icon('info')}<div>No movable joints.</div></div>`;
+    if (!state.prep.dof) html = `<div class="notice info">${icon('info')}<div>${t('No movable joints.')}</div></div>`;
     else {
       const J = jacobian(state.prep, lastFK.q, lastFK.ee);
       const rows = state.prep.dof >= 6 ? 6 : 3;
       const m = manipulability(J, rows);
       const Jsq = state.prep.dof === 6 ? M.det(J) : null;
-      html = `<div class="matrix-caption">rows: v<sub>x</sub> v<sub>y</sub> v<sub>z</sub> ω<sub>x</sub> ω<sub>y</sub> ω<sub>z</sub> · columns: q₁…q${state.prep.dof}</div>${matrixHTML(J)}
+      html = `<div class="matrix-caption">${t('rows: v<sub>x</sub> v<sub>y</sub> v<sub>z</sub> ω<sub>x</sub> ω<sub>y</sub> ω<sub>z</sub> · columns: q₁…q{n}', { n: state.prep.dof })}</div>${matrixHTML(J)}
         <div class="stat-row" style="margin-top:12px">
-          <div class="stat"><div class="stat-k">manipulability</div><div class="stat-v">${m.w.toExponential(2)}</div></div>
+          <div class="stat"><div class="stat-k">${t('manipulability')}</div><div class="stat-v">${m.w.toExponential(2)}</div></div>
           <div class="stat"><div class="stat-k">σ min</div><div class="stat-v">${(m.sv.at(-1) ?? 0).toExponential(2)}</div></div>
           <div class="stat"><div class="stat-k">${Jsq !== null ? 'det J' : 'cond'}</div><div class="stat-v">${Jsq !== null ? Jsq.toExponential(2) : Number.isFinite(m.cond) ? m.cond.toFixed(1) : '∞'}</div></div>
         </div>
-        ${m.sv.at(-1) < 1e-3 ? `<div class="notice warn" style="margin-top:10px">${icon('warn')}<div>The arm is at (or very near) a singularity — it loses a direction of motion here.</div></div>` : ''}
-        <p class="hint">${rows === 6 ? '' : 'Fewer than 6 DOF: manipulability uses the 3 linear rows. '}Computed numerically, so it works for custom-matrix joints too.</p>`;
+        ${m.sv.at(-1) < 1e-3 ? `<div class="notice warn" style="margin-top:10px">${icon('warn')}<div>${t('The arm is at (or very near) a singularity — it loses a direction of motion here.')}</div></div>` : ''}
+        <p class="hint">${rows === 6 ? '' : t('Fewer than 6 DOF: manipulability uses the 3 linear rows. ')}${t('Computed numerically, so it works for custom-matrix joints too.')}</p>`;
     }
   } else {
     const { A } = shownMatrix();
@@ -701,29 +702,29 @@ function renderMatricesBody() {
 function renderParams() {
   const rows = state.robot.params.map((p, i) => `
     <div class="param-row">
-      <input class="input mono" data-bind="param:${i}.name" value="${esc(p.name)}" placeholder="name" data-errkey="param.${esc(p.name)}">
-      <input class="input mono" data-bind="param:${i}.value" value="${esc(p.value)}" placeholder="value / expression">
+      <input class="input mono" data-bind="param:${i}.name" value="${esc(p.name)}" placeholder="${t('name')}" data-errkey="param.${esc(p.name)}">
+      <input class="input mono" data-bind="param:${i}.value" value="${esc(p.value)}" placeholder="${t('value / expression')}">
       <span class="val" data-paramval="${esc(p.name)}"></span>
-      <button class="icon-btn small danger" data-act="param-del" data-i="${i}" title="Remove">${icon('trash')}</button>
+      <button class="icon-btn small danger" data-act="param-del" data-i="${i}" title="${t('Remove')}">${icon('trash')}</button>
     </div>`).join('');
   return `
-    <p class="hint" style="margin-top:0">Named constants used anywhere in the robot — link lengths, offsets… Later parameters can use earlier ones (e.g. <code>L3 = L1 + L2</code>).</p>
-    ${rows || `<div class="empty-note">No parameters yet.</div>`}
-    <button class="btn btn-sm" data-act="param-add" style="margin-top:6px">${icon('plus')}Add parameter</button>
+    <p class="hint" style="margin-top:0">${t('Named constants used anywhere in the robot — link lengths, offsets… Later parameters can use earlier ones (e.g. <code>L3 = L1 + L2</code>).')}</p>
+    ${rows || `<div class="empty-note">${t('No parameters yet.')}</div>`}
+    <button class="btn btn-sm" data-act="param-add" style="margin-top:6px">${icon('plus')}${t('Add parameter')}</button>
     <div class="divider"></div>
-    <div class="section-title">Expression reference</div>
-    <p class="hint">Operators <code>+ - * / ^</code>, constants <code>pi</code> <code>e</code>.<br>Functions: ${FUNCTION_NAMES.map((f) => `<code>${f}</code>`).join(' ')}</p>
+    <div class="section-title">${t('Expression reference')}</div>
+    <p class="hint">${t('Operators <code>+ - * / ^</code>, constants <code>pi</code> <code>e</code>.<br>Functions:')} ${FUNCTION_NAMES.map((f) => `<code>${f}</code>`).join(' ')}</p>
     <div class="divider"></div>
-    <div class="field"><label>Notes</label><textarea class="input" rows="5" data-bind="robot.notes" placeholder="Anything worth remembering about this robot…">${esc(state.robot.notes)}</textarea></div>`;
+    <div class="field"><label>${t('Notes')}</label><textarea class="input" rows="5" data-bind="robot.notes" placeholder="${t('Anything worth remembering about this robot…')}">${esc(state.robot.notes)}</textarea></div>`;
 }
 
 function renderCode() {
   return `
-    <p class="hint" style="margin-top:0">Write your closed-form inverse kinematics here (JavaScript). The function receives the target flange pose <code>T</code>, your parameters <code>P</code> and helpers <code>h</code>, and returns all solution branches.</p>
+    <p class="hint" style="margin-top:0">${t('Write your closed-form inverse kinematics here (JavaScript). The function receives the target flange pose <code>T</code>, your parameters <code>P</code> and helpers <code>h</code>, and returns all solution branches.')}</p>
     <textarea class="code-editor" data-bind="robot.analyticIK" spellcheck="false">${esc(state.robot.analyticIK || ANALYTIC_TEMPLATE)}</textarea>
     <div class="row" style="margin-top:10px">
-      <button class="btn btn-primary btn-sm" data-act="code-test">${icon('play')}Test on current pose</button>
-      <button class="btn btn-sm" data-act="code-template">Insert template</button>
+      <button class="btn btn-primary btn-sm" data-act="code-test">${icon('play')}${t('Test on current pose')}</button>
+      <button class="btn btn-sm" data-act="code-template">${t('Insert template')}</button>
     </div>
     <div id="code-result" style="margin-top:12px"></div>`;
 }
@@ -743,7 +744,7 @@ function syncTargetGizmo() {
 }
 
 function runNumericIK(target = state.ik.target, { quiet = false } = {}) {
-  if (!state.prep.dof) { if (!quiet) toast('Add a movable joint first', 'err'); return; }
+  if (!state.prep.dof) { if (!quiet) toast(t('Add a movable joint first'), 'err'); return; }
   const res = solveIK(state.prep, target, currentQ(), { mode: state.ik.mode, restarts: quiet ? 2 : 8 });
   if (!quiet) checkpoint();
   setQ(res.q);
@@ -797,20 +798,20 @@ function renderTools() {
     ['matrices', 'Matrices & Jacobian', 'Aᵢ, ⁰Tₙ, J(q), singularities', 'indigo', 'jacobian'],
     ['code', 'Analytic IK solver', 'Plug in your closed form', 'red', 'code'],
     ['workspace', 'Workspace', 'Sample reachable points', 'magenta', 'workspace'],
-  ];
+  ].map(([id, name, desc, ...rest]) => [id, t(name), t(desc), ...rest]);
   $('#tools-panel').innerHTML = `
-    <h2>All tools</h2>
+    <h2>${t('All tools')}</h2>
     <div class="tool-section">
-      <div class="tool-section-title">Build — drag into the chain</div>
+      <div class="tool-section-title">${t('Build — drag into the chain')}</div>
       ${PART_TYPES.map((p) => `
-        <div class="tool-item draggable" draggable="true" data-part="${p.kind}" title="Drag into the chain or click to append">
+        <div class="tool-item draggable" draggable="true" data-part="${p.kind}" title="${t('Drag into the chain or click to append')}">
           <span class="tile ${p.tile}">${glyph(p.glyph)}</span>
-          <div class="tool-text"><span class="tool-name">${p.name}</span><span class="tool-desc">${p.desc}</span></div>
+          <div class="tool-text"><span class="tool-name">${t(p.name)}</span><span class="tool-desc">${t(p.desc)}</span></div>
           <span class="drag-handle">${icon('grip')}</span>
         </div>`).join('')}
     </div>
     <div class="tool-section">
-      <div class="tool-section-title">Analyze</div>
+      <div class="tool-section-title">${t('Analyze')}</div>
       ${analyze.map(([id, name, desc, tile, g]) => `
         <div class="tool-item" data-analyze="${id}">
           <span class="tile ${tile}">${glyph(g)}</span>
@@ -818,17 +819,17 @@ function renderTools() {
         </div>`).join('')}
     </div>
     <div class="tool-section">
-      <div class="tool-section-title">Templates</div>
+      <div class="tool-section-title">${t('Templates')}</div>
       ${PRESETS.map((p, i) => `
         <div class="tool-item" data-preset="${p.id}">
           <span class="tile ${['blue', 'green', 'orange', 'purple'][i % 4]}">${glyph(p.icon)}</span>
-          <div class="tool-text"><span class="tool-name">${p.title}</span><span class="tool-desc">${p.subtitle}</span></div>
+          <div class="tool-text"><span class="tool-name">${t(p.title)}</span><span class="tool-desc">${t(p.subtitle)}</span></div>
         </div>`).join('')}
     </div>`;
 }
 
 function renderQuickRail() {
-  const b = (act, ic, tip, on = false) => `<button class="qbtn ${on ? 'on' : ''}" data-q="${act}" data-tip="${tip}">${icon(ic)}</button>`;
+  const b = (act, ic, tip, on = false) => `<button class="qbtn ${on ? 'on' : ''}" data-q="${act}" data-tip="${t(tip)}">${icon(ic)}</button>`;
   $('#quick-rail').innerHTML = `
     ${b('select', 'cursor', 'Select (Q)', state.tool === 'select')}
     ${b('translate', 'move', 'Move IK target (W)', state.tool === 'translate')}
@@ -841,13 +842,13 @@ function renderQuickRail() {
 }
 
 function renderViewPill() {
-  const v = (id, label) => `<button class="pill-text ${state.camView === id ? 'on' : ''}" data-cam="${id}">${label}</button>`;
+  const v = (id, label) => `<button class="pill-text ${state.camView === id ? 'on' : ''}" data-cam="${id}">${t(label)}</button>`;
   $('#view-pill').innerHTML = `
     ${v('iso', 'Iso')}${v('front', 'Front')}${v('side', 'Side')}${v('top', 'Top')}
     <div class="sep"></div>
-    <button class="qbtn" data-zoom="1.2" title="Zoom out">${icon('zoomOut')}</button>
-    <button class="qbtn" data-zoom="0.83" title="Zoom in">${icon('zoomIn')}</button>
-    <button class="qbtn" data-cam="fit" title="Fit robot">${icon('fit')}</button>`;
+    <button class="qbtn" data-zoom="1.2" title="${t('Zoom out')}">${icon('zoomOut')}</button>
+    <button class="qbtn" data-zoom="0.83" title="${t('Zoom in')}">${icon('zoomIn')}</button>
+    <button class="qbtn" data-cam="fit" title="${t('Fit robot')}">${icon('fit')}</button>`;
 }
 
 // ------------------------------------------------------------------ home
@@ -855,25 +856,25 @@ function renderViewPill() {
 function renderHome() {
   const recent = store.get('beanyik_recent', []);
   const session = store.get('beanyik_session', null);
-  const ago = (t) => {
-    const s = (Date.now() - t) / 1000;
-    if (s < 60) return 'just now';
-    if (s < 3600) return `${Math.floor(s / 60)} min ago`;
-    if (s < 86400) return `${Math.floor(s / 3600)} h ago`;
-    return new Date(t).toLocaleDateString();
+  const ago = (time) => {
+    const s = (Date.now() - time) / 1000;
+    if (s < 60) return t('just now');
+    if (s < 3600) return t('{n} min ago', { n: Math.floor(s / 60) });
+    if (s < 86400) return t('{n} h ago', { n: Math.floor(s / 3600) });
+    return new Date(time).toLocaleDateString();
   };
   $('#home').innerHTML = `
     <div class="home-inner">
-      <h1>Welcome to BeanyIK</h1>
-      <p class="sub">Build serial robots from parts, then solve their forward and inverse kinematics.</p>
+      <h1>${t('Welcome to BeanyIK')}</h1>
+      <p class="sub">${t('Build serial robots from parts, then solve their forward and inverse kinematics.')}</p>
       <div class="hero">
         <div>
-          <h2>Start building a robot</h2>
-          <p>Drag revolute and prismatic joints into a chain, describe each one with DH parameters or your own 4×4 matrix, then drag the target and watch the IK solver move it.</p>
+          <h2>${t('Start building a robot')}</h2>
+          <p>${t('Drag revolute and prismatic joints into a chain, describe each one with DH parameters or your own 4×4 matrix, then drag the target and watch the IK solver move it.')}</p>
           <div class="row" style="justify-content:flex-start;flex-wrap:wrap">
-            <button class="btn btn-primary" data-home="new" style="flex:0">${icon('plus')}New robot</button>
-            <button class="btn" data-home="open" style="flex:0">${icon('folder')}Open file</button>
-            ${session?.robot ? `<button class="btn" data-home="resume" style="flex:0">${icon('play')}Continue “${esc(session.robot.name)}”</button>` : ''}
+            <button class="btn btn-primary" data-home="new" style="flex:0">${icon('plus')}${t('New robot')}</button>
+            <button class="btn" data-home="open" style="flex:0">${icon('folder')}${t('Open file')}</button>
+            ${session?.robot ? `<button class="btn" data-home="resume" style="flex:0">${icon('play')}${t('Continue “{name}”', { name: esc(session.robot.name) })}</button>` : ''}
           </div>
         </div>
         <svg class="hero-art" width="210" height="150" viewBox="0 0 210 150" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
@@ -882,30 +883,30 @@ function renderHome() {
           <path d="M175 75l8 10M175 75l12-3"/><circle cx="190" cy="100" r="9" stroke-dasharray="4 4" opacity=".8"/><path d="M190 88v-6M190 112v6M178 100h-6M202 100h6" opacity=".8"/>
         </svg>
       </div>
-      <h3>Start from a template</h3>
+      <h3>${t('Start from a template')}</h3>
       <div class="card-grid">
         ${PRESETS.map((p, i) => `
           <div class="card" data-preset="${p.id}">
             <span class="tile ${['blue', 'green', 'orange', 'purple'][i % 4]}">${glyph(p.icon)}</span>
-            <div><div class="card-title">${p.title}</div><div class="card-sub">${p.subtitle}</div></div>
-            <div class="card-meta">${p.build().joints.length} joints · analytic IK included</div>
+            <div><div class="card-title">${t(p.title)}</div><div class="card-sub">${t(p.subtitle)}</div></div>
+            <div class="card-meta">${t('{n} joints · analytic IK included', { n: p.build().joints.length })}</div>
           </div>`).join('')}
         <div class="card" data-home="new">
           <span class="tile gray">${glyph('blank')}</span>
-          <div><div class="card-title">Blank robot</div><div class="card-sub">Empty chain — drag parts in yourself</div></div>
-          <div class="card-meta">Standard DH</div>
+          <div><div class="card-title">${t('Blank robot')}</div><div class="card-sub">${t('Empty chain — drag parts in yourself')}</div></div>
+          <div class="card-meta">${t('Standard DH')}</div>
         </div>
       </div>
-      <h3>Recent</h3>
+      <h3>${t('Recent')}</h3>
       <div class="recent-list">
-        <div class="recent-row head"><span></span><span>Name</span><span>Opened</span><span>Location</span></div>
+        <div class="recent-row head"><span></span><span>${t('Name')}</span><span>${t('Opened')}</span><span>${t('Location')}</span></div>
         ${recent.length ? recent.map((r, i) => `
           <div class="recent-row" data-recent="${i}">
             <span class="tile sm blue">${icon('robot')}</span>
             <span><b>${esc(r.name)}</b></span>
             <span class="muted">${ago(r.time)}</span>
             <span class="muted" title="${esc(r.filePath)}">${esc(r.filePath)}</span>
-          </div>`).join('') : '<div class="empty-note">Robots you save or open will show up here.</div>'}
+          </div>`).join('') : `<div class="empty-note">${t('Robots you save or open will show up here.')}</div>`}
       </div>
     </div>`;
 }
@@ -919,7 +920,7 @@ function addRecent(filePath, name) {
 // ------------------------------------------------------------------- files
 
 function confirmDiscard() {
-  return !state.dirty || state.filePath === null && !state.robot?.joints.length || confirm('You have unsaved changes. Discard them?');
+  return !state.dirty || state.filePath === null && !state.robot?.joints.length || confirm(t('You have unsaved changes. Discard them?'));
 }
 
 function serialize() {
@@ -930,12 +931,12 @@ function serialize() {
 
 function loadFromText(text, filePath) {
   let data;
-  try { data = JSON.parse(text); } catch (e) { toast('Not a valid robot file', 'err'); return; }
-  if (!Array.isArray(data.joints)) { toast('Not a BeanyIK robot file', 'err'); return; }
+  try { data = JSON.parse(text); } catch (e) { toast(t('Not a valid robot file'), 'err'); return; }
+  if (!Array.isArray(data.joints)) { toast(t('Not a BeanyIK robot file'), 'err'); return; }
   const { pose, ...robot } = data;
   openRobot(robot, { filePath, qById: pose || null });
   if (filePath) addRecent(filePath, robot.name);
-  toast(`Opened ${robot.name}`, 'ok');
+  toast(t('Opened {name}', { name: robot.name }), 'ok');
 }
 
 async function openFile() {
@@ -952,12 +953,12 @@ async function save(saveAs = false) {
   state.filePath = res.filePath;
   markDirty(false);
   addRecent(res.filePath, state.robot.name);
-  toast('Saved', 'ok');
+  toast(t('Saved'), 'ok');
 }
 
 async function exportText(content, name, ext, label) {
   const res = await window.api.exportText({ content, suggestedName: name, filters: [{ name: label, extensions: [ext] }] });
-  if (res) toast(`Exported ${res.filePath.split(/[\\/]/).pop()}`, 'ok');
+  if (res) toast(t('Exported {name}', { name: res.filePath.split(/[\\/]/).pop() }), 'ok');
 }
 
 function newRobot() {
@@ -979,7 +980,7 @@ function toggleMenu(show) {
   if (show === undefined) show = m.hidden;
   if (!show) { m.hidden = true; return; }
   const doc = state.view === 'doc';
-  const item = (act, ic, label, kbd = '', enabled = true) => enabled ? `<div class="menu-item" data-menu="${act}">${icon(ic)}${label}<span class="kbd">${kbd}</span></div>` : '';
+  const item = (act, ic, label, kbd = '', enabled = true) => enabled ? `<div class="menu-item" data-menu="${act}">${icon(ic)}${t(label)}<span class="kbd">${kbd}</span></div>` : '';
   m.innerHTML = `
     ${item('new', 'plus', 'New robot', 'Ctrl+N')}
     ${item('open', 'folder', 'Open…', 'Ctrl+O')}
@@ -990,8 +991,20 @@ function toggleMenu(show) {
     ${item('export-csv', 'export', 'Export DH table (.csv)', '', doc)}
     <div class="menu-sep"></div>
     ${item('theme', 'theme', document.documentElement.dataset.theme === 'dark' ? 'Light theme' : 'Dark theme')}
+    ${item('lang', 'globe', getLang() === 'sk' ? 'English' : 'Slovenčina')}
     ${item('home', 'home', 'Home')}`;
   m.hidden = false;
+}
+
+function switchLanguage(lang) {
+  setLang(lang);
+  translateStatic();
+  $('#lang-label').textContent = getLang().toUpperCase();
+  renderTools();
+  renderQuickRail();
+  renderViewPill();
+  if (state.view === 'home') renderHome();
+  if (state.robot) refresh({ panel: true });
 }
 
 function toggleTheme() {
@@ -1075,6 +1088,7 @@ function wireEvents() {
   $('#btn-max').onclick = () => window.api.maximize();
   $('#btn-close').onclick = () => window.api.close();
   $('#btn-theme').onclick = toggleTheme;
+  $('#btn-lang').onclick = () => switchLanguage(getLang() === 'sk' ? 'en' : 'sk');
   $('#btn-undo').onclick = undo;
   $('#btn-redo').onclick = redo;
   $('#btn-save').onclick = () => (state.view === 'doc' ? save() : openFile());
@@ -1093,23 +1107,24 @@ function wireEvents() {
     toggleMenu(false);
     ({
       new: newRobot, open: openFile, save: () => save(), saveas: () => save(true), theme: toggleTheme, home: () => showView('home'),
+      lang: () => switchLanguage(getLang() === 'sk' ? 'en' : 'sk'),
       'export-matlab': () => doAction('export-matlab'), 'export-csv': () => doAction('export-csv'),
     })[it.dataset.menu]?.();
   });
 
   $('#home').addEventListener('click', (e) => {
-    const t = e.target.closest('[data-home],[data-preset],[data-recent]');
-    if (!t) return;
-    if (t.dataset.preset) return loadPreset(t.dataset.preset);
-    if (t.dataset.recent) {
-      const r = store.get('beanyik_recent', [])[+t.dataset.recent];
+    const el = e.target.closest('[data-home],[data-preset],[data-recent]');
+    if (!el) return;
+    if (el.dataset.preset) return loadPreset(el.dataset.preset);
+    if (el.dataset.recent) {
+      const r = store.get('beanyik_recent', [])[+el.dataset.recent];
       window.api.readRobot(r.filePath).then((res) => {
-        if (res.error) { toast(`Can't open: ${res.error}`, 'err'); return; }
+        if (res.error) { toast(t("Can't open: {err}", { err: res.error }), 'err'); return; }
         loadFromText(res.content, res.filePath);
       });
       return;
     }
-    const act = t.dataset.home;
+    const act = el.dataset.home;
     if (act === 'new') newRobot();
     if (act === 'open') openFile();
     if (act === 'resume') {
@@ -1220,9 +1235,9 @@ function wireEvents() {
     if (e.key === 'Enter' && e.target.matches('input.input')) e.target.blur();
     if (e.key === 'Tab' && e.target.matches('.code-editor')) {
       e.preventDefault();
-      const t = e.target, s = t.selectionStart;
-      t.setRangeText('  ', s, t.selectionEnd, 'end');
-      onBoundInput(t);
+      const ta = e.target, s = ta.selectionStart;
+      ta.setRangeText('  ', s, ta.selectionEnd, 'end');
+      onBoundInput(ta);
     }
   });
   side.addEventListener('click', (e) => {
@@ -1285,10 +1300,10 @@ function setTool(t) {
 function toggleWorkspace() {
   state.showWorkspace = !state.showWorkspace;
   if (state.showWorkspace) {
-    if (!state.prep.dof) { state.showWorkspace = false; toast('Add a movable joint first', 'err'); }
+    if (!state.prep.dof) { state.showWorkspace = false; toast(t('Add a movable joint first'), 'err'); }
     else {
       viewport.setWorkspace(sampleWorkspace(state.prep, Math.min(30000, 3000 * state.prep.dof)));
-      toast('Workspace sampled — random joint configurations within limits', 'info');
+      toast(t('Workspace sampled — random joint configurations within limits'), 'info');
     }
   } else viewport.setWorkspace(null);
   renderQuickRail();
@@ -1334,18 +1349,18 @@ function doAction(act, data = {}) {
       if (res.error) { el.innerHTML = `<div class="notice err">${icon('warn')}<div>${esc(res.error)}</div></div>`; return; }
       const good = res.solutions.filter((s) => s.ok).length;
       const matchesCurrent = res.solutions.some((s) => s.ok && s.q.every((v, i) => Math.abs(Math.atan2(Math.sin(v - lastFK.q[i]), Math.cos(v - lastFK.q[i]))) < 1e-4));
-      el.innerHTML = `<div class="notice ${good ? 'ok' : 'warn'}">${icon(good ? 'check' : 'warn')}<div>${res.solutions.length} branch(es) returned, <b>${good}</b> reproduce the current end-effector pose${matchesCurrent ? ', including the current joint configuration' : ''}.</div></div>`;
+      el.innerHTML = `<div class="notice ${good ? 'ok' : 'warn'}">${icon(good ? 'check' : 'warn')}<div>${t('{n} branch(es) returned, <b>{ok}</b> reproduce the current end-effector pose', { n: res.solutions.length, ok: good })}${matchesCurrent ? t(', including the current joint configuration') : ''}.</div></div>`;
       return;
     }
     case 'copy-matrix': {
       const { name, A } = shownMatrix();
       navigator.clipboard.writeText(matrixToMatlab(A, name));
-      return toast('Copied as MATLAB matrix', 'ok');
+      return toast(t('Copied as MATLAB matrix'), 'ok');
     }
     case 'export-matlab': return exportText(toMatlab(state.robot), `${state.robot.name.replace(/[^\w]+/g, '_')}_fk.m`, 'm', 'MATLAB script');
     case 'export-csv': return exportText(dhTableCSV(state.robot), `${state.robot.name.replace(/[^\w]+/g, '_')}_dh.csv`, 'csv', 'CSV');
-    case 'export-latex': navigator.clipboard.writeText(dhTableLatex(state.robot)); return toast('DH table copied as LaTeX', 'ok');
-    case 'copy-text': navigator.clipboard.writeText(matrixToText(shownMatrix().A)); return toast('Copied', 'ok');
+    case 'export-latex': navigator.clipboard.writeText(dhTableLatex(state.robot)); return toast(t('DH table copied as LaTeX'), 'ok');
+    case 'copy-text': navigator.clipboard.writeText(matrixToText(shownMatrix().A)); return toast(t('Copied'), 'ok');
   }
 }
 
@@ -1357,6 +1372,9 @@ const viewport = new Viewport($('#viewport'), {
   onTargetDragEnd: () => { if (state.ik.live) markDirty(); },
 });
 
+setLang(getLang());
+translateStatic();
+$('#lang-label').textContent = getLang().toUpperCase();
 hydrateIcons();
 renderTools();
 renderQuickRail();
