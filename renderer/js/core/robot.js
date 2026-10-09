@@ -162,7 +162,21 @@ export function prepare(robot) {
   });
 
   const activeLinks = links.filter((l) => l.active);
+
+  // Pose-independent size of the robot (sum of link offsets + prismatic
+  // stroke + tool). Used to size the 3D drawing so it doesn't "breathe" as
+  // the arm moves.
+  let size = M.norm(M.position(tool));
+  for (const link of links) {
+    try {
+      size += M.norm(M.position(link.transform(link.home)));
+      if (link.joint.type === 'prismatic' && Number.isFinite(link.max) && Number.isFinite(link.min)) size += Math.abs(link.max - link.min);
+    } catch { /* reported via errors */ }
+  }
+  if (!Number.isFinite(size)) size = 0;
+
   return {
+    size,
     robot,
     modified,
     scope,

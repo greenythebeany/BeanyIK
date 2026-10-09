@@ -128,7 +128,25 @@ input, select, textarea { font: inherit; color: var(--text); }
 .tab:hover { color: var(--text); background: var(--bg-hover); }
 .tab.active { color: var(--text); background: var(--bg-canvas); border: 1px solid var(--border); border-bottom-color: var(--bg-canvas); }
 .tab .ico { width: 18px; height: 18px; }
-.tab #doc-title { overflow: hidden; text-overflow: ellipsis; }
+.tabs { min-width: 0; overflow: hidden; }
+.tab .tab-title { overflow: hidden; text-overflow: ellipsis; }
+.doc-tab { padding-right: 6px; min-width: 0; flex-shrink: 1; }
+.tab-close {
+  width: 22px; height: 22px; border-radius: 5px; display: inline-flex; align-items: center; justify-content: center;
+  color: var(--text-3); opacity: 0; flex-shrink: 0;
+}
+.tab-close svg { width: 15px; height: 15px; }
+.doc-tab:hover .tab-close, .doc-tab.active .tab-close { opacity: 1; }
+.tab-close:hover { background: var(--bg-active); color: var(--text); }
+.doc-tab.dirty .tab-close { opacity: 0; width: 0; margin-left: -6px; }
+.doc-tab.dirty:hover .tab-close { opacity: 1; width: 22px; margin-left: 0; }
+.doc-tab.dirty:hover .dirty-dot { display: none; }
+.tab-new {
+  width: 30px; height: 30px; margin: 0 0 3px 4px; align-self: flex-end; flex-shrink: 0; border: none; background: none;
+  border-radius: 6px; cursor: pointer; color: var(--text-3); display: inline-flex; align-items: center; justify-content: center;
+}
+.tab-new svg { width: 17px; height: 17px; }
+.tab-new:hover { background: var(--bg-hover); color: var(--text); }
 .dirty-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); display: none; }
 .dirty .dirty-dot { display: inline-block; }
 

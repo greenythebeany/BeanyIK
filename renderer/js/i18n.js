@@ -211,6 +211,10 @@ const SK = {
   "Can't open: {err}": 'Nedá sa otvoriť: {err}',
   'You have unsaved changes. Discard them?': 'Máš neuložené zmeny. Zahodiť ich?',
   'Untitled robot': 'Nepomenovaný robot',
+  'Close tab': 'Zavrieť kartu',
+  'New tab': 'Nová karta',
+  '“{name}” has unsaved changes. Close it anyway?': '„{name}“ má neuložené zmeny. Zavrieť aj tak?',
+  'Reopen {n} robots': 'Znovu otvoriť roboty ({n})',
 };
 
 const DICTS = { en: {}, sk: SK };

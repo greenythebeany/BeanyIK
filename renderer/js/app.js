@@ -38,9 +38,15 @@ const state = {
   camView: 'iso',
   ik: { target: null, live: true, mode: 'full', result: null, analytic: null },
   matrixView: 'total',
+  history: { past: [], future: [] },
+  camera: null,
 };
 
-const history = { past: [], future: [] };
+// Open robots (tabs). The active document's fields live directly on `state`;
+// the others are stashed in their `docs` entry until they're activated.
+const DOC_KEYS = ['robot', 'prep', 'qById', 'selected', 'filePath', 'dirty', 'ik', 'matrixView', 'showWorkspace', 'history', 'camera'];
+const docs = [];
+let activeDoc = -1;
 
 const PANELS = [
   { id: 'chain', title: 'Kinematic chain', icon: 'chain' },
@@ -113,9 +119,9 @@ function snapshot() {
 }
 
 function checkpoint() {
-  history.past.push(snapshot());
-  if (history.past.length > 200) history.past.shift();
-  history.future = [];
+  state.history.past.push(snapshot());
+  if (state.history.past.length > 200) state.history.past.shift();
+  state.history.future = [];
   updateUndoButtons();
 }
 
@@ -129,82 +135,186 @@ function restore(snap) {
 }
 
 function undo() {
-  if (!history.past.length) return;
-  history.future.push(snapshot());
-  restore(history.past.pop());
+  if (!state.history.past.length) return;
+  state.history.future.push(snapshot());
+  restore(state.history.past.pop());
   updateUndoButtons();
 }
 
 function redo() {
-  if (!history.future.length) return;
-  history.past.push(snapshot());
-  restore(history.future.pop());
+  if (!state.history.future.length) return;
+  state.history.past.push(snapshot());
+  restore(state.history.future.pop());
   updateUndoButtons();
 }
 
 function updateUndoButtons() {
-  $('#btn-undo').disabled = !history.past.length;
-  $('#btn-redo').disabled = !history.future.length;
+  $('#btn-undo').disabled = !state.history.past.length;
+  $('#btn-redo').disabled = !state.history.future.length;
 }
 
 function markDirty(d = true) {
   state.dirty = d;
-  $('#tab-doc').classList.toggle('dirty', d);
-  if (d) autosave();
+  renderTabs();
+  autosave();
 }
 
 let autosaveTimer = null;
+function saveSessionNow() {
+  clearTimeout(autosaveTimer);
+  store.set('beanyik_session', {
+    docs: docs.map((d, i) => {
+      const src = i === activeDoc ? state : d;
+      return { robot: src.robot, qById: src.qById, filePath: src.filePath, dirty: src.dirty };
+    }),
+    active: activeDoc,
+    savedAt: Date.now(),
+  });
+}
+
 function autosave() {
   clearTimeout(autosaveTimer);
-  autosaveTimer = setTimeout(() => {
-    store.set('beanyik_session', { robot: state.robot, qById: state.qById, filePath: state.filePath, savedAt: Date.now() });
-  }, 400);
+  autosaveTimer = setTimeout(saveSessionNow, 400);
 }
 
 // ------------------------------------------------------- open document
 
-function openRobot(robot, { filePath = null, qById = null, fresh = true } = {}) {
-  state.robot = makeRobot(robot);
-  state.robot.joints = state.robot.joints.map((j) => ({ ...makeJoint(j.type), ...j, dh: { ...makeJoint(j.type).dh, ...j.dh } }));
-  state.filePath = filePath;
-  state.qById = qById || {};
-  state.selected = null;
-  state.ik.result = null;
-  state.ik.analytic = null;
-  state.showWorkspace = false;
-  viewport.setWorkspace(null);
-  if (fresh) { history.past = []; history.future = []; }
-  state.prep = prepare(state.robot);
-  if (!qById) setQ(state.prep.home);
-  state.ik.mode = state.prep.dof >= 6 ? 'full' : 'position';
-  state.ik.target = null;
-  markDirty(false);
+function docField(i, key) {
+  return i === activeDoc ? state[key] : docs[i][key];
+}
+
+function stashActive() {
+  if (activeDoc < 0) return;
+  state.camera = viewport.getCamera();
+  for (const k of DOC_KEYS) docs[activeDoc][k] = state[k];
+}
+
+function loadDoc(i) {
+  for (const k of DOC_KEYS) state[k] = docs[i][k];
+  activeDoc = i;
+}
+
+// Bring document i to the front (stashing the current one).
+function switchToDoc(i, { stash = true } = {}) {
+  if (i < 0 || i >= docs.length) return;
+  if (i !== activeDoc) {
+    if (stash) stashActive();
+    loadDoc(i);
+    viewport.setWorkspace(null);
+    showView('doc');
+    refresh({ panel: true });
+    syncTargetGizmo();
+    if (state.camera) viewport.setCamera(state.camera);
+    else requestAnimationFrame(() => viewport.frame(state.camView));
+  } else {
+    showView('doc');
+  }
+  renderQuickRail();
+  updateUndoButtons();
   autosave();
+}
+
+function openRobot(robot, { filePath = null, qById = null, dirty = false } = {}) {
+  const r = makeRobot(robot);
+  r.joints = r.joints.map((j) => ({ ...makeJoint(j.type), ...j, dh: { ...makeJoint(j.type).dh, ...j.dh } }));
+  const prep = prepare(r);
+  docs.push({
+    robot: r,
+    prep,
+    qById: qById || {},
+    selected: null,
+    filePath,
+    dirty,
+    ik: { target: null, live: true, mode: prep.dof >= 6 ? 'full' : 'position', result: null, analytic: null },
+    matrixView: 'total',
+    showWorkspace: false,
+    history: { past: [], future: [] },
+    camera: null,
+  });
+  stashActive();
+  loadDoc(docs.length - 1);
+  if (!qById) setQ(state.prep.home);
+  viewport.setWorkspace(null);
   showView('doc');
   refresh({ panel: true });
   resetTargetToEE();
   syncTargetGizmo();
   requestAnimationFrame(() => viewport.frame(state.camView));
+  renderQuickRail();
   updateUndoButtons();
+  autosave();
+}
+
+function closeDoc(i = activeDoc) {
+  if (i < 0 || i >= docs.length) return;
+  if (docField(i, 'dirty') && !confirm(t('“{name}” has unsaved changes. Close it anyway?', { name: docField(i, 'robot').name }))) return;
+  if (i !== activeDoc) {
+    docs.splice(i, 1);
+    if (i < activeDoc) activeDoc--;
+    renderTabs();
+    autosave();
+    return;
+  }
+  docs.splice(i, 1);
+  activeDoc = -1;
+  viewport.setWorkspace(null);
+  if (docs.length) switchToDoc(Math.min(i, docs.length - 1), { stash: false });
+  else {
+    state.robot = null;
+    showView('home');
+    autosave();
+  }
+}
+
+// Tab order: Home, then documents. Ctrl+1 = Home, Ctrl+2.. = documents.
+function goToTab(n) {
+  if (n <= 0) return showView('home');
+  if (docs.length) switchToDoc(Math.min(n, docs.length) - 1);
+}
+
+function cycleTabs(dir) {
+  const count = docs.length + 1;
+  const cur = state.view === 'home' ? 0 : activeDoc + 1;
+  goToTab((cur + dir + count) % count);
+}
+
+function renderTabs() {
+  const host = $('#tabs');
+  const tabs = docs.map((d, i) => {
+    const name = docField(i, 'robot')?.name || t('Untitled robot');
+    const active = state.view === 'doc' && i === activeDoc;
+    return `<button class="tab doc-tab ${active ? 'active' : ''} ${docField(i, 'dirty') ? 'dirty' : ''}" data-doc="${i}" title="${esc(name)}${i < 7 ? ` (Ctrl+${i + 2})` : ''}">
+      ${icon('robot')}<span class="tab-title">${esc(name)}</span><span class="dirty-dot"></span>
+      <span class="tab-close" data-close="${i}" title="${t('Close tab')} (Ctrl+W)">${icon('close')}</span>
+    </button>`;
+  }).join('');
+  host.innerHTML = `<button class="tab ${state.view === 'home' ? 'active' : ''}" data-home-tab title="${t('Home')} (Ctrl+1)">${icon('home')}<span>${t('Home')}</span></button>${tabs}
+    <button class="tab-new" data-new-tab title="${t('New tab')} (Ctrl+T)">${icon('plus')}</button>`;
+  document.title = state.robot ? `${state.robot.name} — BeanyIK` : 'BeanyIK';
 }
 
 function showView(view) {
+  if (view === 'doc' && activeDoc < 0) view = 'home';
   state.view = view;
   $('#home').hidden = view !== 'home';
   $('#workspace').hidden = view !== 'doc';
-  $('#tab-home').classList.toggle('active', view === 'home');
-  $('#tab-doc').classList.toggle('active', view === 'doc');
-  $('#tab-doc').hidden = !state.robot;
+  renderTabs();
   if (view === 'home') renderHome();
+}
+
+function restoreSession() {
+  const s = store.get('beanyik_session', null);
+  const list = s?.docs || (s?.robot ? [s] : []);
+  list.forEach((d) => openRobot(d.robot, { filePath: d.filePath, qById: d.qById, dirty: !!d.dirty }));
+  if (list.length) switchToDoc(Math.max(0, Math.min(s.active ?? 0, docs.length - 1)));
 }
 
 // ------------------------------------------------------------- refresh
 
 function refresh({ panel = false, scene = true } = {}) {
   state.prep = prepare(state.robot);
-  $('#doc-title').textContent = state.robot.name || t('Untitled robot');
-  document.title = `${state.robot.name} — BeanyIK`;
-  if (scene) updateScene();
+  renderTabs();
+  if (scene) { updateScene(); snapTargetToEE(); scheduleWorkspace(); }
   renderRail();
   if (panel) renderPanel();
   else updateFieldErrors();
@@ -222,6 +332,7 @@ function updateScene() {
     geometry: jointGeometry(state.prep, q, res),
     selectedId: state.selected,
     errorIds: errorIds(),
+    size: state.prep.size,
   });
   renderHud();
   if (state.panel === 'matrices' && state.panelOpen) renderMatricesBody();
@@ -336,8 +447,6 @@ function onBoundInput(el) {
   obj[key] = el.value;
   markDirty();
   refresh();
-  // keep the chain summary in sync without re-rendering inputs
-  if (state.panel === 'chain') renderPanel();
 }
 
 function updateFieldErrors() {
@@ -736,6 +845,38 @@ function resetTargetToEE() {
   viewport.setTarget(state.ik.target);
 }
 
+// Any pose change that didn't come from the IK solver moves the target back
+// onto the end effector, so the gizmo never floats where the arm used to be.
+function snapTargetToEE() {
+  if (!lastFK || viewport.tcontrols.dragging) return;
+  state.ik.target = M.clone(lastFK.ee);
+  state.ik.result = null;
+  state.ik.analytic = null;
+  viewport.setTarget(state.ik.target);
+  if (state.panel === 'ik' && state.panelOpen) {
+    const { roll, pitch, yaw } = M.toRPY(state.ik.target);
+    const T = state.ik.target;
+    const vals = { x: T[0][3], y: T[1][3], z: T[2][3], roll: roll / M.DEG, pitch: pitch / M.DEG, yaw: yaw / M.DEG };
+    $$('[data-tgt]').forEach((el) => { if (document.activeElement !== el) el.value = fmt(vals[el.dataset.tgt], ['x', 'y', 'z'].includes(el.dataset.tgt) ? 4 : 2); });
+    renderIKStatus();
+  }
+}
+
+// Manual (non-IK) joint motion: redraw and bring the target along.
+function poseChanged() {
+  updateScene();
+  snapTargetToEE();
+}
+
+let workspaceTimer = null;
+function scheduleWorkspace() {
+  if (!state.showWorkspace) return;
+  clearTimeout(workspaceTimer);
+  workspaceTimer = setTimeout(() => {
+    if (state.showWorkspace && state.prep.dof) viewport.setWorkspace(sampleWorkspace(state.prep, Math.min(30000, 3000 * state.prep.dof)));
+  }, 200);
+}
+
 function syncTargetGizmo() {
   const visible = state.tool !== 'select' || (state.panelOpen && state.panel === 'ik');
   if (!state.ik.target) resetTargetToEE();
@@ -856,6 +997,7 @@ function renderViewPill() {
 function renderHome() {
   const recent = store.get('beanyik_recent', []);
   const session = store.get('beanyik_session', null);
+  const resumeList = (session?.docs || (session?.robot ? [session] : [])).filter((d) => d?.robot);
   const ago = (time) => {
     const s = (Date.now() - time) / 1000;
     if (s < 60) return t('just now');
@@ -874,7 +1016,7 @@ function renderHome() {
           <div class="row" style="justify-content:flex-start;flex-wrap:wrap">
             <button class="btn btn-primary" data-home="new" style="flex:0">${icon('plus')}${t('New robot')}</button>
             <button class="btn" data-home="open" style="flex:0">${icon('folder')}${t('Open file')}</button>
-            ${session?.robot ? `<button class="btn" data-home="resume" style="flex:0">${icon('play')}${t('Continue “{name}”', { name: esc(session.robot.name) })}</button>` : ''}
+            ${resumeList.length && !docs.length ? `<button class="btn" data-home="resume" style="flex:0">${icon('play')}${resumeList.length === 1 ? t('Continue “{name}”', { name: esc(resumeList[0].robot.name) }) : t('Reopen {n} robots', { n: resumeList.length })}</button>` : ''}
           </div>
         </div>
         <svg class="hero-art" width="210" height="150" viewBox="0 0 210 150" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
@@ -919,10 +1061,6 @@ function addRecent(filePath, name) {
 
 // ------------------------------------------------------------------- files
 
-function confirmDiscard() {
-  return !state.dirty || state.filePath === null && !state.robot?.joints.length || confirm(t('You have unsaved changes. Discard them?'));
-}
-
 function serialize() {
   const q = {};
   state.prep.activeLinks.forEach((l) => { q[l.joint.id] = state.qById[l.joint.id]; });
@@ -934,13 +1072,14 @@ function loadFromText(text, filePath) {
   try { data = JSON.parse(text); } catch (e) { toast(t('Not a valid robot file'), 'err'); return; }
   if (!Array.isArray(data.joints)) { toast(t('Not a BeanyIK robot file'), 'err'); return; }
   const { pose, ...robot } = data;
+  const already = filePath ? docs.findIndex((d, i) => docField(i, 'filePath') === filePath) : -1;
+  if (already >= 0) { switchToDoc(already); return; }
   openRobot(robot, { filePath, qById: pose || null });
   if (filePath) addRecent(filePath, robot.name);
   toast(t('Opened {name}', { name: robot.name }), 'ok');
 }
 
 async function openFile() {
-  if (state.view === 'doc' && !confirmDiscard()) return;
   const res = await window.api.openRobot();
   if (res) loadFromText(res.content, res.filePath);
 }
@@ -962,13 +1101,11 @@ async function exportText(content, name, ext, label) {
 }
 
 function newRobot() {
-  if (state.view === 'doc' && !confirmDiscard()) return;
   openRobot(blankRobot());
   openPanel('chain');
 }
 
 function loadPreset(id) {
-  if (state.view === 'doc' && state.robot && !confirmDiscard()) return;
   const p = PRESETS.find((x) => x.id === id);
   openRobot(p.build());
 }
@@ -982,10 +1119,11 @@ function toggleMenu(show) {
   const doc = state.view === 'doc';
   const item = (act, ic, label, kbd = '', enabled = true) => enabled ? `<div class="menu-item" data-menu="${act}">${icon(ic)}${t(label)}<span class="kbd">${kbd}</span></div>` : '';
   m.innerHTML = `
-    ${item('new', 'plus', 'New robot', 'Ctrl+N')}
+    ${item('new', 'plus', 'New robot', 'Ctrl+T')}
     ${item('open', 'folder', 'Open…', 'Ctrl+O')}
     ${item('save', 'save', 'Save', 'Ctrl+S', doc)}
     ${item('saveas', 'save', 'Save as…', 'Ctrl+Shift+S', doc)}
+    ${item('close', 'close', 'Close tab', 'Ctrl+W', doc)}
     ${doc ? '<div class="menu-sep"></div>' : ''}
     ${item('export-matlab', 'export', 'Export to MATLAB (.m)', '', doc)}
     ${item('export-csv', 'export', 'Export DH table (.csv)', '', doc)}
@@ -1003,6 +1141,7 @@ function switchLanguage(lang) {
   renderTools();
   renderQuickRail();
   renderViewPill();
+  renderTabs();
   if (state.view === 'home') renderHome();
   if (state.robot) refresh({ panel: true });
 }
@@ -1093,8 +1232,19 @@ function wireEvents() {
   $('#btn-redo').onclick = redo;
   $('#btn-save').onclick = () => (state.view === 'doc' ? save() : openFile());
   $('#btn-menu').onclick = (e) => { e.stopPropagation(); toggleMenu(); };
-  $('#tab-home').onclick = () => showView('home');
-  $('#tab-doc').onclick = () => showView('doc');
+  $('#tabs').addEventListener('click', (e) => {
+    const close = e.target.closest('[data-close]');
+    if (close) { e.stopPropagation(); closeDoc(+close.dataset.close); return; }
+    if (e.target.closest('[data-home-tab]')) return showView('home');
+    if (e.target.closest('[data-new-tab]')) return newRobot();
+    const tab = e.target.closest('[data-doc]');
+    if (tab) switchToDoc(+tab.dataset.doc);
+  });
+  // middle-click closes a tab, like in a browser
+  $('#tabs').addEventListener('auxclick', (e) => {
+    const tab = e.target.closest('[data-doc]');
+    if (tab && e.button === 1) closeDoc(+tab.dataset.doc);
+  });
   $('#side-close').onclick = () => { state.panelOpen = false; $('#side-panel').classList.add('collapsed'); renderRail(); syncTargetGizmo(); };
 
   document.addEventListener('click', (e) => {
@@ -1108,6 +1258,7 @@ function wireEvents() {
     ({
       new: newRobot, open: openFile, save: () => save(), saveas: () => save(true), theme: toggleTheme, home: () => showView('home'),
       lang: () => switchLanguage(getLang() === 'sk' ? 'en' : 'sk'),
+      close: () => closeDoc(),
       'export-matlab': () => doAction('export-matlab'), 'export-csv': () => doAction('export-csv'),
     })[it.dataset.menu]?.();
   });
@@ -1128,8 +1279,7 @@ function wireEvents() {
     if (act === 'new') newRobot();
     if (act === 'open') openFile();
     if (act === 'resume') {
-      const s = store.get('beanyik_session', null);
-      if (s?.robot) { openRobot(s.robot, { filePath: s.filePath, qById: s.qById }); markDirty(!!s.filePath); }
+      restoreSession();
     }
   });
 
@@ -1189,7 +1339,7 @@ function wireEvents() {
   side.addEventListener('change', (e) => {
     const el = e.target;
     if (el.dataset.bind && el.dataset.snap) {
-      if (el.dataset.snap !== snapshot()) { history.past.push(el.dataset.snap); history.future = []; updateUndoButtons(); }
+      if (el.dataset.snap !== snapshot()) { state.history.past.push(el.dataset.snap); state.history.future = []; updateUndoButtons(); }
       el.dataset.snap = snapshot();
       if (state.panel === 'props' && el.dataset.bind.includes('.name')) renderRail();
     }
@@ -1206,7 +1356,7 @@ function wireEvents() {
         q[i] = fromDisplay(l.joint, v);
         setQ(q);
         markDirty();
-        updateScene();
+        poseChanged();
       }
     }
   });
@@ -1227,7 +1377,7 @@ function wireEvents() {
       q[i] = +el.value;
       setQ(q);
       markDirty();
-      updateScene();
+      poseChanged();
     }
   });
   side.addEventListener('pointerdown', (e) => { if (e.target.dataset.qrange !== undefined) checkpoint(); });
@@ -1270,11 +1420,19 @@ function wireEvents() {
   });
 
   document.addEventListener('keydown', (e) => {
-    const typing = e.target.matches('input, textarea, select');
+    const typing = !!e.target.matches?.('input, textarea, select');
     const ctrl = e.ctrlKey || e.metaKey;
     if (ctrl && e.key.toLowerCase() === 's') { e.preventDefault(); if (state.view === 'doc') save(e.shiftKey); return; }
     if (ctrl && e.key.toLowerCase() === 'o') { e.preventDefault(); openFile(); return; }
-    if (ctrl && e.key.toLowerCase() === 'n') { e.preventDefault(); newRobot(); return; }
+    if (ctrl && ['n', 't'].includes(e.key.toLowerCase())) { e.preventDefault(); newRobot(); return; }
+    if (ctrl && e.key.toLowerCase() === 'w') { e.preventDefault(); if (state.view === 'doc') closeDoc(); return; }
+    if (ctrl && e.key === 'Tab') { e.preventDefault(); cycleTabs(e.shiftKey ? -1 : 1); return; }
+    if (ctrl && /^Digit[1-9]$/.test(e.code)) {
+      e.preventDefault();
+      const n = Number(e.code.slice(5));
+      goToTab(n === 9 ? docs.length : n - 1); // Ctrl+9 = last tab, like browsers
+      return;
+    }
     if (typing || state.view !== 'doc') return;
     if (ctrl && e.key.toLowerCase() === 'z') { e.preventDefault(); e.shiftKey ? redo() : undo(); return; }
     if (ctrl && e.key.toLowerCase() === 'y') { e.preventDefault(); redo(); return; }
@@ -1313,8 +1471,8 @@ function doAction(act, data = {}) {
   switch (act) {
     case 'del': return deleteJoint(data.id);
     case 'dup': return duplicateJoint(data.id);
-    case 'home': checkpoint(); setQ(state.prep.home); markDirty(); return updateScene();
-    case 'zero': checkpoint(); setQ(state.prep.home.map(() => 0)); markDirty(); return updateScene();
+    case 'home': checkpoint(); setQ(state.prep.home); markDirty(); return poseChanged();
+    case 'zero': checkpoint(); setQ(state.prep.home.map(() => 0)); markDirty(); return poseChanged();
     case 'random': {
       checkpoint();
       setQ(state.prep.limits.map(([a, b]) => {
@@ -1322,7 +1480,7 @@ function doAction(act, data = {}) {
         return lo + Math.random() * (hi - lo);
       }));
       markDirty();
-      return updateScene();
+      return poseChanged();
     }
     case 'tgt-ee': resetTargetToEE(); state.ik.result = null; return renderPanel();
     case 'ik-num': return runNumericIK();
@@ -1386,3 +1544,4 @@ if (!PANELS.some((p) => p.id === state.panel)) state.panel = 'chain';
 window.api?.onWindowState?.(() => {});
 showView('home');
 updateUndoButtons();
+window.addEventListener('beforeunload', () => { stashActive(); saveSessionNow(); });

@@ -64,6 +64,7 @@ a floating quick-tools rail beside the canvas, and an icon rail on the right tha
 - **Export**: symbolic FK + Jacobian as a MATLAB `.m` script (Symbolic Math Toolbox), DH table as CSV or
   LaTeX, and any matrix as MATLAB.
 - **English & Slovak UI.** Switch with the 🌐 EN/SK button in the top bar (Slovenčina is picked automatically on a Slovak system).
+- **Tabs.** Open several robots at once, like documents in Acrobat. Each tab keeps its own pose, undo history, IK target and camera, and the whole set of tabs is restored on the next start.
 - Robots save as readable `.robot.json`. Also included: undo/redo, recent files, autosave and light/dark themes.
 
 ### Templates
@@ -126,7 +127,12 @@ Hit **Test on current pose**, or use **Analytic** in the IK panel to solve for t
 
 | Key | Action |
 | --- | --- |
-| `Ctrl+N` / `Ctrl+O` / `Ctrl+S` / `Ctrl+Shift+S` | New / open / save / save as |
+| `Ctrl+T` (or `Ctrl+N`) | New robot in a new tab |
+| `Ctrl+W` | Close the current tab (asks if there are unsaved changes) |
+| `Ctrl+1` … `Ctrl+8` | Jump to tab: `Ctrl+1` is Home, `Ctrl+2` the first robot, … |
+| `Ctrl+9` | Jump to the last tab |
+| `Ctrl+Tab` / `Ctrl+Shift+Tab` | Next / previous tab |
+| `Ctrl+O` / `Ctrl+S` / `Ctrl+Shift+S` | Open / save / save as |
 | `Ctrl+Z` / `Ctrl+Y` | Undo / redo |
 | `Q` / `W` / `E` | Select / move IK target / rotate IK target |
 | `F` | Toggle coordinate frames |

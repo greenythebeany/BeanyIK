@@ -200,11 +200,12 @@ export class Viewport {
 
     // characteristic size -> radii
     const pts = scene.frames.map((T) => [T[0][3], T[1][3], T[2][3]]);
-    let reach = 0;
-    for (const p of pts) reach = Math.max(reach, Math.hypot(...p));
-    const s = Math.max(0.15, reach);
+    // scene.size is pose-independent, so radii stay fixed while joints move
+    let s = scene.size;
+    if (!(s > 0)) { s = 0; for (const p of pts) s = Math.max(s, Math.hypot(...p)); }
+    s = Math.max(0.15, s);
     this.scaleHint = s;
-    const rLink = 0.018 * s, rJoint = 0.04 * s, hJoint = 0.1 * s;
+    const rLink = 0.014 * s, rJoint = 0.03 * s, hJoint = 0.075 * s;
 
     // base plate
     const base = scene.frames[0];
@@ -254,7 +255,7 @@ export class Viewport {
     // frames
     if (this.showFrames) {
       scene.frames.forEach((T, i) => {
-        const a = this._axes(0.06 * s, 0.7 * s, i === 0 ? 1 : 0.85);
+        const a = this._axes(0.045 * s, 0.55 * s, i === 0 ? 1 : 0.85);
         a.matrixAutoUpdate = false;
         a.matrix.copy(toMatrix4(T));
         g.add(a);
@@ -267,7 +268,7 @@ export class Viewport {
     tip.scale.setScalar(rJoint * 0.55);
     tip.userData.pick = 'tool';
     ee.add(tip);
-    ee.add(this._axes(0.1 * s, 1.1 * s));
+    ee.add(this._axes(0.075 * s, 0.85 * s));
     ee.matrixAutoUpdate = false;
     ee.matrix.copy(toMatrix4(scene.ee));
     g.add(ee);
@@ -276,8 +277,8 @@ export class Viewport {
     if (toolLine) { toolLine.userData.pick = 'tool'; g.add(toolLine); }
 
     // gizmo scale tracks robot size
-    this.target.children[0].scale.setScalar(0.06 * s);
-    this.target.children[1].scale.setScalar(s * 0.9);
+    this.target.children[0].scale.setScalar(0.045 * s);
+    this.target.children[1].scale.setScalar(s * 0.7);
   }
 
   setWorkspace(points) {
@@ -350,6 +351,16 @@ export class Viewport {
     this.camera.position.copy(center).addScaledVector(d, dist);
     this.camera.updateProjectionMatrix();
     this._buildGrid(document.documentElement.dataset.theme === 'dark');
+  }
+
+  getCamera() {
+    return { position: this.camera.position.toArray(), target: this.controls.target.toArray() };
+  }
+
+  setCamera(c) {
+    this.camera.position.fromArray(c.position);
+    this.controls.target.fromArray(c.target);
+    this.controls.update();
   }
 
   zoom(factor) {
