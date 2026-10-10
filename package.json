@@ -1,8 +1,8 @@
 {
   "name": "beanyik",
   "productName": "BeanyIK",
-  "version": "0.1.0",
-  "description": "GreenyBeany's terminal-styled drag & drop robot kinematics builder — DH / custom matrices, forward & inverse kinematics",
+  "version": "1.0.0",
+  "description": "Drag & drop robot kinematics builder — DH / custom matrices, forward & inverse kinematics",
   "main": "main.js",
   "private": true,
   "author": "GreenyBeany",
@@ -23,30 +23,68 @@
   "build": {
     "appId": "dev.greenybeany.beanyik",
     "productName": "BeanyIK",
+    "copyright": "Copyright © 2026 GreenyBeany",
     "directories": {
-      "output": "dist"
+      "output": "dist",
+      "buildResources": "build"
     },
     "files": [
       "main.js",
       "preload.js",
+      "update-checker.js",
       "icon.png",
+      "LICENSE",
+      "TERMS.md",
+      "CREDITS.md",
       "renderer/**/*"
     ],
-    "icon": "icon.png",
+    "icon": "build/icon.ico",
     "win": {
       "target": [
-        "portable",
-        "nsis"
-      ]
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "license": "build/license.txt",
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "BeanyIK",
+      "artifactName": "BeanyIK-Setup-${version}.${ext}"
+    },
+    "portable": {
+      "artifactName": "BeanyIK-Portable-${version}.${ext}"
     },
     "linux": {
       "target": [
         "AppImage"
       ],
-      "category": "Education"
+      "category": "Education",
+      "icon": "icon.png"
     }
   },
   "allowScripts": {
     "electron@31.7.7": true
+  },
+  "homepage": "https://github.com/greenythebeany/BeanyIK",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/greenythebeany/BeanyIK.git"
   }
 }

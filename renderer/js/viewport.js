@@ -28,7 +28,8 @@ function fromMatrix4(m) {
 }
 
 export class Viewport {
-  constructor(container, { onSelect, onTargetDrag, onTargetDragEnd } = {}) {
+  constructor(container, { onSelect, onTargetDragStart, onTargetDrag, onTargetDragEnd } = {}) {
+    this.onTargetDragStart = onTargetDragStart;
     this.container = container;
     this.onSelect = onSelect;
     this.onTargetDrag = onTargetDrag;
@@ -102,6 +103,7 @@ export class Viewport {
     this.tcontrols.setSize(0.8);
     this.tcontrols.addEventListener('dragging-changed', (e) => {
       this.controls.enabled = !e.value;
+      if (e.value && this.onTargetDragStart) this.onTargetDragStart();
       if (!e.value && this.onTargetDragEnd) this.onTargetDragEnd(this.getTarget());
     });
     this.tcontrols.addEventListener('objectChange', () => {
@@ -305,6 +307,8 @@ export class Viewport {
     if (visible) {
       this.tcontrols.attach(this.target);
       this.tcontrols.setMode(mode);
+      // move along world X/Y/Z (what you expect when dragging); rotate about the target's own axes
+      this.tcontrols.setSpace(mode === 'translate' ? 'world' : 'local');
     } else {
       this.tcontrols.detach();
     }
@@ -338,7 +342,7 @@ export class Viewport {
     if (box.isEmpty()) box.set(new THREE.Vector3(-0.3, -0.3, 0), new THREE.Vector3(0.3, 0.3, 0.6));
     box.expandByPoint(new THREE.Vector3(0, 0, 0));
     const center = box.getCenter(new THREE.Vector3());
-    const size = Math.max(0.35, box.getSize(new THREE.Vector3()).length());
+    const size = Math.max(0.6, box.getSize(new THREE.Vector3()).length());
     const dist = size * 1.45;
     const dirs = {
       iso: new THREE.Vector3(1, -1.1, 0.8),
@@ -361,6 +365,18 @@ export class Viewport {
     this.camera.position.fromArray(c.position);
     this.controls.target.fromArray(c.target);
     this.controls.update();
+  }
+
+  robotInView(margin = 0.92) {
+    const box = new THREE.Box3().setFromObject(this.robotGroup);
+    if (box.isEmpty()) return true;
+    this.camera.updateMatrixWorld();
+    const corners = [];
+    for (const x of [box.min.x, box.max.x]) for (const y of [box.min.y, box.max.y]) for (const z of [box.min.z, box.max.z]) corners.push(new THREE.Vector3(x, y, z));
+    return corners.every((c) => {
+      const p = c.project(this.camera);
+      return Math.abs(p.x) <= margin && Math.abs(p.y) <= margin && p.z < 1;
+    });
   }
 
   zoom(factor) {

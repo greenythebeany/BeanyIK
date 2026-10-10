@@ -15,6 +15,21 @@ const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const fmt = (v, d = 3) => (Number.isFinite(v) ? (Math.abs(v) < 0.5 * 10 ** -d ? 0 : v).toFixed(d) : '—');
+// Textbook-style notation: italic symbol with subscript, e.g. sym('θ', 2) -> θ₂
+const sym = (s, sub) => `<span class="mi">${s}</span>${sub !== undefined && sub !== '' ? `<sub>${sub}</sub>` : ''}`;
+// Typeset a field expression: identifiers italic with numeric subscripts
+// (L1 -> L₁), numbers upright, '*' as '·', '-' as a real minus.
+const MATH_FUNCS = new Set(['sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'atan2', 'sqrt', 'abs', 'exp', 'log', 'ln', 'min', 'max', 'deg', 'rad', 'sind', 'cosd', 'hypot', 'sign']);
+const mathExpr = (src) => esc(String(src ?? '').trim()).replace(/[A-Za-z_]+\d*|-|\*/g, (m) => {
+  if (m === '-') return '−';
+  if (m === '*') return '·';
+  if (m === 'pi') return 'π';
+  if (MATH_FUNCS.has(m)) return m;
+  const [, name, digits] = /^([A-Za-z_]+?)(\d*)$/.exec(m);
+  return sym(name, digits || undefined);
+});
+const deg = (v) => `${v}°`;
+
 const store = {
   get(k, def) { try { const v = localStorage.getItem(k); return v == null ? def : JSON.parse(v); } catch { return def; } },
   set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* ignore */ } },
@@ -245,9 +260,50 @@ function openRobot(robot, { filePath = null, qById = null, dirty = false } = {})
   autosave();
 }
 
-function closeDoc(i = activeDoc) {
+// In-app confirmation dialog (native confirm() looks foreign and can leave
+// Electron's text inputs unfocusable afterwards). Resolves true/false.
+function confirmDialog(message, { okLabel = t('Close tab'), cancelLabel = t('Cancel'), danger = true } = {}) {
+  return new Promise((resolve) => {
+    const el = $('#confirm');
+    el.innerHTML = `
+      <div class="modal-card confirm-card" role="alertdialog" aria-modal="true">
+        <div class="confirm-body">${icon('warn')}<p>${esc(message)}</p></div>
+        <div class="row" style="justify-content:flex-end;gap:8px;margin-top:18px">
+          <button class="btn" data-confirm="0" style="flex:0">${cancelLabel}</button>
+          <button class="btn ${danger ? 'btn-danger' : 'btn-primary'}" data-confirm="1" style="flex:0">${okLabel}</button>
+        </div>
+      </div>`;
+    el.hidden = false;
+    const done = (v) => {
+      el.hidden = true;
+      el.removeEventListener('click', onClick);
+      document.removeEventListener('keydown', onKey, true);
+      resolve(v);
+    };
+    const onClick = (e) => {
+      if (e.target === el) return done(false);
+      const b = e.target.closest('[data-confirm]');
+      if (b) done(b.dataset.confirm === '1');
+    };
+    const onKey = (e) => {
+      if (e.key === 'Escape') { e.stopPropagation(); e.preventDefault(); done(false); }
+      if (e.key === 'Enter') { e.stopPropagation(); e.preventDefault(); done(true); }
+    };
+    el.addEventListener('click', onClick);
+    document.addEventListener('keydown', onKey, true);
+    el.querySelector('[data-confirm="1"]').focus();
+  });
+}
+
+async function closeDoc(i = activeDoc) {
   if (i < 0 || i >= docs.length) return;
-  if (docField(i, 'dirty') && !confirm(t('“{name}” has unsaved changes. Close it anyway?', { name: docField(i, 'robot').name }))) return;
+  if (docField(i, 'dirty')) {
+    const docRef = docs[i];
+    const ok = await confirmDialog(t('“{name}” has unsaved changes. Close it anyway?', { name: docField(i, 'robot').name }));
+    if (!ok) return;
+    i = docs.indexOf(docRef); // tabs may have moved while the dialog was open
+    if (i < 0) return;
+  }
   if (i !== activeDoc) {
     docs.splice(i, 1);
     if (i < activeDoc) activeDoc--;
@@ -353,14 +409,12 @@ function renderHud() {
   }
   $('#hud').innerHTML = `
     <div class="hud-title">${t('End effector')} ${manip}</div>
-    <div class="hud-grid">
-      <span class="k x">x</span><span>${fmt(T[0][3])}</span>
-      <span class="k y">y</span><span>${fmt(T[1][3])}</span>
-      <span class="k z">z</span><span>${fmt(T[2][3])}</span>
-      <span class="k x">R</span><span>${fmt(roll / M.DEG, 1)}°</span>
-      <span class="k y">P</span><span>${fmt(pitch / M.DEG, 1)}°</span>
-      <span class="k z">Y</span><span>${fmt(yaw / M.DEG, 1)}°</span>
+    <div class="hud-math">
+      <div><span class="mi">p</span> = (${fmt(T[0][3])}, ${fmt(T[1][3])}, ${fmt(T[2][3])}) m</div>
+      <div><span class="mi">φ</span>, <span class="mi">θ</span>, <span class="mi">ψ</span> = (${fmt(roll / M.DEG, 1)}°, ${fmt(pitch / M.DEG, 1)}°, ${fmt(yaw / M.DEG, 1)}°)</div>
     </div>`;
+  const conv = state.robot.convention === 'modified' ? t('Modified DH') : t('Standard DH');
+  $('#fig-caption').innerHTML = `<b>${t('Fig.')} ${activeDoc + 1}</b> ${esc(state.robot.name)} · ${state.prep.dof} DOF · ${conv}`;
 }
 
 // ------------------------------------------------------------ editing
@@ -379,6 +433,7 @@ function insertJoint(kind, index = state.robot.joints.length) {
   state.selected = j.id;
   markDirty();
   refresh({ panel: true });
+  fitIfOutOfView();
   if (state.panel !== 'chain' && state.panel !== 'props') openPanel('props');
   toast(t('Added {what}', { what: t(PART_TYPES.find((p) => p.kind === kind)?.name || 'Joint').toLowerCase() }), 'info');
 }
@@ -394,6 +449,7 @@ function moveJoint(id, toIndex) {
   arr.splice(toIndex, 0, j);
   markDirty();
   refresh({ panel: true });
+  fitIfOutOfView();
 }
 
 function deleteJoint(id) {
@@ -405,6 +461,7 @@ function deleteJoint(id) {
   if (state.selected === id) state.selected = null;
   markDirty();
   refresh({ panel: true });
+  fitIfOutOfView();
 }
 
 function duplicateJoint(id) {
@@ -419,6 +476,11 @@ function duplicateJoint(id) {
   state.selected = copy.id;
   markDirty();
   refresh({ panel: true });
+  fitIfOutOfView();
+}
+
+function fitIfOutOfView() {
+  requestAnimationFrame(() => { if (!viewport.robotInView()) viewport.frame(state.camView); });
 }
 
 function select(id) {
@@ -499,11 +561,50 @@ function renderPanel() {
   if (state.panel === 'ik') renderIKStatus();
 }
 
+// Joint variable index (q₁, q₂, …) of joint j, or null for fixed links.
+function qIndexOf(j) {
+  if (!isActive(j)) return null;
+  return state.robot.joints.filter(isActive).indexOf(j) + 1;
+}
+
+// One DH row as math cells: { theta, d, a, alpha } (HTML).
+function dhCells(j) {
+  const k = qIndexOf(j);
+  const zero = (v) => /^\s*-?0*(\.0*)?\s*$/.test(String(v ?? '0'));
+  const plus = (q, off, unit = '') => (zero(off) ? q : `${q} ${String(off).trim().startsWith('-') ? '−' : '+'} ${mathExpr(String(off).trim().replace(/^-/, ''))}${unit}`);
+  const qv = k ? sym('q', k) : '';
+  return {
+    theta: j.type === 'revolute' ? plus(qv, j.dh.theta, '°') : deg(mathExpr(j.dh.theta)),
+    d: j.type === 'prismatic' ? plus(qv, j.dh.d) : mathExpr(j.dh.d),
+    a: mathExpr(j.dh.a),
+    alpha: deg(mathExpr(j.dh.alpha)),
+  };
+}
+
 function dhSummary(j) {
   if (j.mode === 'matrix') return t('custom 4×4 transform');
-  const th = j.type === 'revolute' ? (j.dh.theta && j.dh.theta !== '0' ? `q+${j.dh.theta}°` : 'q') : `${j.dh.theta}°`;
-  const d = j.type === 'prismatic' ? (j.dh.d && j.dh.d !== '0' ? `q+${j.dh.d}` : 'q') : j.dh.d;
-  return `θ=${th}  d=${d}  a=${j.dh.a}  α=${j.dh.alpha}°`;
+  const c = dhCells(j);
+  const i = state.robot.joints.indexOf(j) + 1;
+  return `${sym('θ', i)} = ${c.theta}, ${sym('d', i)} = ${c.d}, ${sym('a', i)} = ${c.a}, ${sym('α', i)} = ${c.alpha}`;
+}
+
+// Textbook DH table (booktabs style).
+function dhTableHTML() {
+  const r = state.robot;
+  if (!r.joints.length) return '';
+  const mod = r.convention === 'modified';
+  const sa = mod ? 'i−1' : 'i';
+  const rows = r.joints.map((j, idx) => {
+    if (j.mode === 'matrix') return `<tr><td>${idx + 1}</td><td colspan="4" class="muted">${t('custom 4×4 transform')}</td></tr>`;
+    const c = dhCells(j);
+    return mod
+      ? `<tr><td>${idx + 1}</td><td>${c.alpha}</td><td>${c.a}</td><td>${c.theta}</td><td>${c.d}</td></tr>`
+      : `<tr><td>${idx + 1}</td><td>${c.theta}</td><td>${c.d}</td><td>${c.a}</td><td>${c.alpha}</td></tr>`;
+  }).join('');
+  const head = mod
+    ? `<th>${sym('i')}</th><th>${sym('α', sa)}</th><th>${sym('a', sa)}</th><th>${sym('θ', 'i')}</th><th>${sym('d', 'i')}</th>`
+    : `<th>${sym('i')}</th><th>${sym('θ', 'i')}</th><th>${sym('d', 'i')}</th><th>${sym('a', 'i')}</th><th>${sym('α', 'i')}</th>`;
+  return `<table class="dh-table"><caption>${t('Table')} 1 — ${t(mod ? 'Modified DH' : 'Standard DH')} ${t('parameters')}</caption><thead><tr>${head}</tr></thead><tbody>${rows}</tbody></table>`;
 }
 
 function tileFor(j) {
@@ -523,7 +624,7 @@ function renderChain() {
         <span class="tile sm ${tile}">${glyph(g)}</span>
         <div class="node-text">
           <div class="node-name">${esc(jointLabel(j, i))} <span class="node-idx">#${i + 1}</span>${hasErr ? `<span class="badge err">${icon('warn')}${t('error')}</span>` : ''}</div>
-          <div class="node-sub">${esc(dhSummary(j))}</div>
+          <div class="node-sub">${dhSummary(j)}</div>
         </div>
         <div class="node-actions">
           <button class="icon-btn small" data-act="dup" data-id="${j.id}" title="${t('Duplicate')}">${icon('copy')}</button>
@@ -557,7 +658,8 @@ function renderChain() {
         ${special('tool', t('Tool / end effector'), poseSub(r.tool), 'tool')}
       </div>
     </div>
-    <p class="hint">${t('Drag parts from the left to insert them anywhere in the chain. Drag the grip to reorder. Click a link in the 3D view to select it.')}</p>`;
+    <p class="hint">${t('Drag parts from the left to insert them anywhere in the chain. Drag the grip to reorder. Click a link in the 3D view to select it.')}</p>
+    ${r.joints.length ? `<div class="divider"></div><div class="section">${dhTableHTML()}</div>` : ''}`;
 }
 
 function poseFields(key) {
@@ -702,7 +804,7 @@ function renderIK() {
       <div class="section-title">${t('Target pose')} <span class="grow"></span><button class="btn btn-sm btn-quiet" data-act="tgt-ee">${icon('target')}${t('Use current')}</button></div>
       <div class="grid3">${num('x', tg[0][3], 'm')}${num('y', tg[1][3], 'm')}${num('z', tg[2][3], 'm')}</div>
       <div class="grid3" style="margin-top:10px">${num('roll', roll / M.DEG, 'deg')}${num('pitch', pitch / M.DEG, 'deg')}${num('yaw', yaw / M.DEG, 'deg')}</div>
-      <p class="hint">${t('Or drag the green target in the 3D view — <b>W</b> move, <b>E</b> rotate.')}</p>
+      <p class="hint">${t('Or drag the green target in the 3D view — <b>Ctrl+M</b> move, <b>Ctrl+R</b> rotate.')}</p>
     </div>
     <div class="section">
       <label class="switch"><input type="checkbox" data-act="ik-live" ${state.ik.live ? 'checked' : ''}><span class="track"></span>${t('Follow target live (numerical)')}</label>
@@ -738,11 +840,12 @@ function renderIKStatus() {
       <div class="sol-head">${t('Branch {n}', { n: i + 1 })}
         ${s.ok ? `<span class="badge ok">${t('reaches')}</span>` : `<span class="badge err">${esc(s.reason || t('misses'))}</span>`}
         ${s.ok && !s.inLimits ? `<span class="badge warn">${t('outside limits')}</span>` : ''}</div>
-      <div class="sol-q">${s.q.map((v, k) => `<span>q${k + 1}=${links[k] ? fmt(toDisplay(links[k].joint, v), links[k].joint.type === 'revolute' ? 1 : 4) : fmt(v)}${links[k]?.joint.type === 'revolute' ? '°' : ''}</span>`).join('')}</div>
+      <div class="sol-q">${s.q.map((v, k) => `<span>${sym('q', k + 1)} = ${links[k] ? fmt(toDisplay(links[k].joint, v), links[k].joint.type === 'revolute' ? 1 : 4) : fmt(v)}${links[k]?.joint.type === 'revolute' ? '°' : ' m'}</span>`).join('')}</div>
     </div>`).join('');
 }
 
 function renderMatrices() {
+  if (state.matrixView.startsWith('A') && +state.matrixView.slice(1) >= state.robot.joints.length) state.matrixView = 'total';
   const opts = [['total', t('⁰T_ee — base to end effector')], ['jacobian', t('Jacobian J(q) (6 × n)')]];
   state.robot.joints.forEach((j, i) => opts.push([`A${i}`, `A${i + 1} — ${jointLabel(j, i)}`]));
   opts.push(['all', t('All link matrices')]);
@@ -777,13 +880,14 @@ function shownMatrix() {
 }
 
 function renderMatricesBody() {
+  if (state.matrixView.startsWith('A') && +state.matrixView.slice(1) >= state.robot.joints.length) state.matrixView = 'total';
   const el = $('#matrix-body');
   if (!el) return;
   const v = state.matrixView;
   let html = '';
   if (v === 'all') {
-    html = lastFK.A.map((A, i) => `<div class="matrix-caption"><b>A${i + 1}</b> ${esc(jointLabel(state.robot.joints[i], i))}</div>${matrixHTML(A)}`).join('')
-      + `<div class="matrix-caption"><b>⁰T_ee</b> = T_base · A₁ ⋯ Aₙ · T_tool</div>${matrixHTML(lastFK.ee)}`;
+    html = lastFK.A.map((A, i) => `<div class="matrix-caption"><span class="eq"><sup>${i}</sup>${sym('A', i + 1)}</span> ${esc(jointLabel(state.robot.joints[i], i))}</div>${matrixHTML(A)}`).join('')
+      + `<div class="matrix-caption"><span class="eq"><sup>0</sup>${sym('T')}<sub>ee</sub> = ${sym('T')}<sub>base</sub> ${sym('A', 1)} ⋯ ${sym('A', 'n')} ${sym('T')}<sub>tool</sub></span></div>${matrixHTML(lastFK.ee)}`;
   } else if (v === 'jacobian') {
     if (!state.prep.dof) html = `<div class="notice info">${icon('info')}<div>${t('No movable joints.')}</div></div>`;
     else {
@@ -791,7 +895,7 @@ function renderMatricesBody() {
       const rows = state.prep.dof >= 6 ? 6 : 3;
       const m = manipulability(J, rows);
       const Jsq = state.prep.dof === 6 ? M.det(J) : null;
-      html = `<div class="matrix-caption">${t('rows: v<sub>x</sub> v<sub>y</sub> v<sub>z</sub> ω<sub>x</sub> ω<sub>y</sub> ω<sub>z</sub> · columns: q₁…q{n}', { n: state.prep.dof })}</div>${matrixHTML(J)}
+      html = `<div class="matrix-caption"><span class="eq">${sym('J')}(${sym('q')}) =</span> <span>${t('rows: v<sub>x</sub> v<sub>y</sub> v<sub>z</sub> ω<sub>x</sub> ω<sub>y</sub> ω<sub>z</sub> · columns: q₁…q{n}', { n: state.prep.dof })}</span></div>${matrixHTML(J)}
         <div class="stat-row" style="margin-top:12px">
           <div class="stat"><div class="stat-k">${t('manipulability')}</div><div class="stat-v">${m.w.toExponential(2)}</div></div>
           <div class="stat"><div class="stat-k">σ min</div><div class="stat-v">${(m.sv.at(-1) ?? 0).toExponential(2)}</div></div>
@@ -803,7 +907,9 @@ function renderMatricesBody() {
   } else {
     const { A } = shownMatrix();
     const { roll, pitch, yaw } = M.toRPY(A);
-    html = matrixHTML(A) + (A.length === 4 ? `<p class="hint">p = (${fmt(A[0][3], 4)}, ${fmt(A[1][3], 4)}, ${fmt(A[2][3], 4)}) m · RPY = (${fmt(roll / M.DEG, 2)}°, ${fmt(pitch / M.DEG, 2)}°, ${fmt(yaw / M.DEG, 2)}°)</p>` : '');
+    const k = v.startsWith('A') ? +v.slice(1) : -1;
+    const label = k >= 0 ? `<sup>${k}</sup>${sym('A', k + 1)}(${sym('q', qIndexOf(state.robot.joints[k]) ?? '')})` : `<sup>0</sup>${sym('T')}<sub>ee</sub>(${sym('q')})`;
+    html = `<div class="matrix-caption"><span class="eq">${label} =</span></div>` + matrixHTML(A) + (A.length === 4 ? `<p class="hint">p = (${fmt(A[0][3], 4)}, ${fmt(A[1][3], 4)}, ${fmt(A[2][3], 4)}) m · RPY = (${fmt(roll / M.DEG, 2)}°, ${fmt(pitch / M.DEG, 2)}°, ${fmt(yaw / M.DEG, 2)}°)</p>` : '');
   }
   el.innerHTML = html;
 }
@@ -886,7 +992,7 @@ function syncTargetGizmo() {
 
 function runNumericIK(target = state.ik.target, { quiet = false } = {}) {
   if (!state.prep.dof) { if (!quiet) toast(t('Add a movable joint first'), 'err'); return; }
-  const res = solveIK(state.prep, target, currentQ(), { mode: state.ik.mode, restarts: quiet ? 2 : 8 });
+  const res = solveIK(state.prep, target, currentQ(), { mode: state.ik.mode, restarts: quiet ? 2 : 12 });
   if (!quiet) checkpoint();
   setQ(res.q);
   state.ik.result = res;
@@ -972,14 +1078,15 @@ function renderTools() {
 function renderQuickRail() {
   const b = (act, ic, tip, on = false) => `<button class="qbtn ${on ? 'on' : ''}" data-q="${act}" data-tip="${t(tip)}">${icon(ic)}</button>`;
   $('#quick-rail').innerHTML = `
-    ${b('select', 'cursor', 'Select (Q)', state.tool === 'select')}
-    ${b('translate', 'move', 'Move IK target (W)', state.tool === 'translate')}
-    ${b('rotate', 'rotate', 'Rotate IK target (E)', state.tool === 'rotate')}
+    ${b('select', 'cursor', 'Select (Esc)', state.tool === 'select')}
+    ${b('translate', 'move', 'Move IK target (Ctrl+M)', state.tool === 'translate')}
+    ${b('rotate', 'rotate', 'Rotate IK target (Ctrl+R)', state.tool === 'rotate')}
     <div class="sep"></div>
-    ${b('frames', 'frames', 'Show frames (F)', state.showFrames)}
-    ${b('workspace', 'cloud', 'Workspace cloud', state.showWorkspace)}
+    ${b('frames', 'frames', 'Show frames (Ctrl+F)', state.showFrames)}
+    ${b('workspace', 'cloud', 'Workspace cloud (Ctrl+K)', state.showWorkspace)}
     <div class="sep"></div>
-    ${b('home', 'home2', 'Home pose (H)')}`;
+    ${b('home', 'home2', 'Home pose (Ctrl+H)')}
+    ${b('keys', 'keyboard', 'Keyboard shortcuts (F1)')}`;
 }
 
 function renderViewPill() {
@@ -1019,11 +1126,7 @@ function renderHome() {
             ${resumeList.length && !docs.length ? `<button class="btn" data-home="resume" style="flex:0">${icon('play')}${resumeList.length === 1 ? t('Continue “{name}”', { name: esc(resumeList[0].robot.name) }) : t('Reopen {n} robots', { n: resumeList.length })}</button>` : ''}
           </div>
         </div>
-        <svg class="hero-art" width="210" height="150" viewBox="0 0 210 150" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M40 135h70" opacity=".7"/><rect x="55" y="120" width="40" height="15" rx="4" fill="rgba(255,255,255,.15)"/>
-          <path d="M75 120 95 70 150 50 175 75" /><circle cx="75" cy="120" r="7" fill="#5a7dfc"/><circle cx="95" cy="70" r="7" fill="#5a7dfc"/><circle cx="150" cy="50" r="7" fill="#5a7dfc"/>
-          <path d="M175 75l8 10M175 75l12-3"/><circle cx="190" cy="100" r="9" stroke-dasharray="4 4" opacity=".8"/><path d="M190 88v-6M190 112v6M178 100h-6M202 100h6" opacity=".8"/>
-        </svg>
+        <img class="hero-art" src="logo.png" width="148" height="148" alt="">
       </div>
       <h3>${t('Start from a template')}</h3>
       <div class="card-grid">
@@ -1130,7 +1233,11 @@ function toggleMenu(show) {
     <div class="menu-sep"></div>
     ${item('theme', 'theme', document.documentElement.dataset.theme === 'dark' ? 'Light theme' : 'Dark theme')}
     ${item('lang', 'globe', getLang() === 'sk' ? 'English' : 'Slovenčina')}
-    ${item('home', 'home', 'Home')}`;
+    ${item('home', 'home', 'Home')}
+    <div class="menu-sep"></div>
+    ${item('keys', 'keyboard', 'Keyboard shortcuts', 'F1')}
+    ${item('terms', 'file', 'Terms & privacy')}
+    ${item('about', 'info', 'About BeanyIK')}`;
   m.hidden = false;
 }
 
@@ -1259,6 +1366,9 @@ function wireEvents() {
       new: newRobot, open: openFile, save: () => save(), saveas: () => save(true), theme: toggleTheme, home: () => showView('home'),
       lang: () => switchLanguage(getLang() === 'sk' ? 'en' : 'sk'),
       close: () => closeDoc(),
+      keys: () => toggleShortcuts(true),
+      terms: () => showAbout('terms'),
+      about: () => showAbout('about'),
       'export-matlab': () => doAction('export-matlab'), 'export-csv': () => doAction('export-csv'),
     })[it.dataset.menu]?.();
   });
@@ -1318,6 +1428,7 @@ function wireEvents() {
     if (q === 'frames') { state.showFrames = !state.showFrames; updateScene(); }
     if (q === 'workspace') toggleWorkspace();
     if (q === 'home') doAction('home');
+    if (q === 'keys') toggleShortcuts();
     renderQuickRail();
   });
 
@@ -1420,7 +1531,9 @@ function wireEvents() {
   });
 
   document.addEventListener('keydown', (e) => {
-    const typing = !!e.target.matches?.('input, textarea, select');
+    if ($('#about').dataset.locked === '1') return; // terms must be accepted first
+    // only text entry owns the keyboard; sliders, checkboxes and dropdowns don't
+    const typing = !!e.target.matches?.('textarea, input:not([type=range]):not([type=checkbox]):not([type=radio])');
     const ctrl = e.ctrlKey || e.metaKey;
     if (ctrl && e.key.toLowerCase() === 's') { e.preventDefault(); if (state.view === 'doc') save(e.shiftKey); return; }
     if (ctrl && e.key.toLowerCase() === 'o') { e.preventDefault(); openFile(); return; }
@@ -1433,24 +1546,234 @@ function wireEvents() {
       goToTab(n === 9 ? docs.length : n - 1); // Ctrl+9 = last tab, like browsers
       return;
     }
+    if (e.key === 'F1' || (ctrl && e.key === '/')) { e.preventDefault(); toggleShortcuts(); return; }
+    if (e.key === 'Escape' && (!$('#shortcuts').hidden || !$('#about').hidden)) { closeModals(); return; }
+    if (state.view === 'doc' && ctrl && !e.altKey) {
+      const k = e.key.toLowerCase();
+      const docCombos = {
+        m: () => setTool(state.tool === 'translate' ? 'select' : 'translate'),
+        r: () => setTool(state.tool === 'rotate' ? 'select' : 'rotate'),
+        h: () => doAction('home'),
+        f: () => { state.showFrames = !state.showFrames; updateScene(); renderQuickRail(); },
+        k: () => toggleWorkspace(),
+        d: () => { if (getJoint(state.selected)) duplicateJoint(state.selected); },
+        0: () => viewport.frame(state.camView),
+        enter: () => (e.shiftKey ? doAction('ik-ana') : doAction('ik-num')),
+      };
+      if (docCombos[k] && !(typing && ['d', 'enter'].includes(k) && e.target.matches?.('textarea'))) {
+        e.preventDefault();
+        docCombos[k]();
+        return;
+      }
+    }
+    if (state.view === 'doc' && e.altKey && /^Digit[1-4]$/.test(e.code)) {
+      e.preventDefault();
+      state.camView = ['iso', 'front', 'side', 'top'][Number(e.code.slice(5)) - 1];
+      viewport.frame(state.camView);
+      renderViewPill();
+      return;
+    }
     if (typing || state.view !== 'doc') return;
     if (ctrl && e.key.toLowerCase() === 'z') { e.preventDefault(); e.shiftKey ? redo() : undo(); return; }
     if (ctrl && e.key.toLowerCase() === 'y') { e.preventDefault(); redo(); return; }
     if (ctrl) return;
     const k = e.key.toLowerCase();
     if (k === 'delete' || k === 'backspace') { if (state.selected && getJoint(state.selected)) deleteJoint(state.selected); }
-    else if (k === 'escape') select(null);
+    else if (k === 'escape') { if (state.tool !== 'select') setTool('select'); else select(null); }
     else if (k === 'q') setTool('select');
-    else if (k === 'w') setTool('translate');
-    else if (k === 'e') setTool('rotate');
+    else if (k === 'w' || k === 'm') setTool('translate');
+    else if (k === 'e' || k === 'r') setTool('rotate');
     else if (k === 'f') { state.showFrames = !state.showFrames; updateScene(); renderQuickRail(); }
     else if (k === 'h') doAction('home');
   });
 }
 
-function setTool(t) {
-  state.tool = t;
-  if (t !== 'select' && (!state.panelOpen || state.panel !== 'ik')) openPanel('ik');
+// ---------------------------------------------------------- about / terms
+
+const REPO_URL = 'https://github.com/greenythebeany/BeanyIK';
+const TERMS_VERSION = 1;
+let appVersion = '';
+
+function openExternal(url) {
+  if (window.api?.openExternal) window.api.openExternal(url);
+  else window.open(url, '_blank');
+}
+
+function termsSummaryHTML() {
+  return `
+    <ul>
+      <li>${t('BeanyIK is free, open-source software under the MIT License.')}</li>
+      <li>${t('It is an educational and design tool. Results are numerical approximations — never use it as the only basis for moving real hardware.')}</li>
+      <li>${t('The analytic IK panel runs JavaScript you type, locally. Only run code you trust, including code inside robot files from others.')}</li>
+      <li>${t('No accounts, analytics or telemetry. Your robots and settings stay on your computer. The app only contacts GitHub to check for updates.')}</li>
+      <li>${t('Provided “as is”, without warranty of any kind.')}</li>
+    </ul>`;
+}
+
+function showAbout(tab = 'about') {
+  const el = $('#about');
+  const tabs = [['about', t('About')], ['credits', t('Credits')], ['terms', t('Terms & privacy')]];
+  const body = {
+    about: `
+      <div class="about-hero"><img src="logo.png" alt=""><div>
+        <h2>BeanyIK</h2>
+        <p>${t('Version')} ${esc(appVersion || '—')} · ${t('by')} GreenyBeany</p>
+        <p>${t('Drag & drop robot kinematics: DH parameters or custom matrices, forward and inverse kinematics, Jacobians and workspaces.')}</p>
+      </div></div>
+      <div class="row" style="justify-content:flex-start;gap:8px">
+        <button class="btn btn-sm" data-ext="${REPO_URL}">${icon('code')}GitHub</button>
+        <button class="btn btn-sm" data-ext="${REPO_URL}/releases">${icon('export')}${t('Releases')}</button>
+        <button class="btn btn-sm" data-ext="${REPO_URL}/issues">${icon('warn')}${t('Report a bug')}</button>
+        <button class="btn btn-sm" data-act-modal="update">${icon('rotate')}${t('Check for updates')}</button>
+      </div>
+      <div id="update-result" class="hint" style="margin-top:10px"></div>`,
+    credits: `
+      <div class="about-section">
+        <h3>${t('Logo')}</h3>
+        <p>${t('Concept and art direction by GreenyBeany; image generated with Google Gemini, then cropped and exported to icon sizes.')}</p>
+        <h3>${t('Fonts')}</h3>
+        <ul>
+          <li><b>Segoe UI</b> — ${t('interface text')} (Microsoft, ${t('included with Windows')})</li>
+          <li><b>Cambria Math</b> — ${t('mathematical notation')} (Microsoft, ${t('included with Windows')})</li>
+          <li><b>Cascadia Code</b> — ${t('code and numbers')} (Microsoft, SIL Open Font License 1.1)</li>
+        </ul>
+        <p class="hint">${t('No font files are bundled; the app uses fonts already installed on your system.')}</p>
+        <h3>${t('Software')}</h3>
+        <ul>
+          <li><a data-ext="https://www.electronjs.org/">Electron</a> — MIT (${t('includes Chromium and Node.js')})</li>
+          <li><a data-ext="https://threejs.org/">three.js</a> r170 — MIT (OrbitControls, TransformControls)</li>
+        </ul>
+        <h3>${t('Design')}</h3>
+        <p>${t('Layout inspired by Adobe Acrobat. Not affiliated with or endorsed by Adobe. UI icons drawn for BeanyIK.')}</p>
+        <h3>${t('References')}</h3>
+        <ul>
+          <li>Denavit &amp; Hartenberg (1955) — ${t('standard DH convention')}</li>
+          <li>Craig, <i>Introduction to Robotics</i> — ${t('modified DH convention')}</li>
+          <li>Siciliano et al., <i>Robotics: Modelling, Planning and Control</i></li>
+          <li>Spong, Hutchinson &amp; Vidyasagar, <i>Robot Modeling and Control</i></li>
+          <li>Wampler (1986) — ${t('damped least-squares IK')}; Yoshikawa (1985) — ${t('manipulability')}</li>
+        </ul>
+        <p><a data-ext="${REPO_URL}/blob/main/CREDITS.md">CREDITS.md</a></p>
+      </div>`,
+    terms: `
+      <div class="about-section">
+        <h3>${t('Summary')}</h3>
+        ${termsSummaryHTML()}
+        <p><a data-ext="${REPO_URL}/blob/main/TERMS.md">${t('Read the full Terms of Use & Privacy')}</a> · <a data-ext="${REPO_URL}/blob/main/LICENSE">MIT License</a></p>
+      </div>`,
+  };
+  el.innerHTML = `
+    <div class="modal-card" role="dialog" aria-label="${t('About BeanyIK')}">
+      <div class="modal-head">
+        <div class="segmented" style="width:auto">${tabs.map(([id, label]) => `<button class="${id === tab ? 'on' : ''}" data-about-tab="${id}" style="padding:0 14px">${label}</button>`).join('')}</div>
+        <button class="icon-btn small" data-close-modal>${icon('close')}</button>
+      </div>
+      ${body[tab]}
+    </div>`;
+  el.hidden = false;
+}
+
+function showTermsPrompt() {
+  const el = $('#about');
+  el.innerHTML = `
+    <div class="modal-card" role="dialog" style="max-width:620px">
+      <div class="about-hero"><img src="logo.png" alt=""><div>
+        <h2>${t('Welcome to BeanyIK')}</h2>
+        <p>${t('Before you start, please read the short version of the terms.')}</p>
+      </div></div>
+      <div class="about-section">${termsSummaryHTML()}
+        <p><a data-ext="${REPO_URL}/blob/main/TERMS.md">${t('Read the full Terms of Use & Privacy')}</a></p>
+      </div>
+      <div class="row" style="justify-content:flex-end;margin-top:18px">
+        <button class="btn btn-primary" data-accept-terms style="flex:0">${icon('check')}${t('I agree')}</button>
+      </div>
+    </div>`;
+  el.dataset.locked = '1';
+  el.hidden = false;
+}
+
+function closeModals() {
+  if ($('#about').dataset.locked === '1') return;
+  $('#about').hidden = true;
+  $('#shortcuts').hidden = true;
+}
+
+function wireModals() {
+  for (const id of ['#about', '#shortcuts']) {
+    $(id).addEventListener('click', async (e) => {
+      if (e.target === e.currentTarget || e.target.closest('[data-close-modal]')) return closeModals();
+      const ext = e.target.closest('[data-ext]');
+      if (ext) { e.preventDefault(); return openExternal(ext.dataset.ext); }
+      const tab = e.target.closest('[data-about-tab]');
+      if (tab) return showAbout(tab.dataset.aboutTab);
+      if (e.target.closest('[data-accept-terms]')) {
+        store.set('beanyik_terms', TERMS_VERSION);
+        $('#about').dataset.locked = '';
+        return closeModals();
+      }
+      if (e.target.closest('[data-act-modal="update"]')) {
+        const out = $('#update-result');
+        out.textContent = t('Checking…');
+        const res = await window.api?.checkForUpdates?.();
+        if (!res) out.textContent = t('Update check is only available in the desktop app.');
+        else if (res.status === 'available') out.innerHTML = `${t('Version {v} is available.', { v: esc(res.version) })} <a data-ext="${esc(res.url)}">${t('Download')}</a>`;
+        else if (res.status === 'up-to-date') out.textContent = t('You have the latest version.');
+        else out.textContent = t('Could not check for updates: {err}', { err: res.error || '' });
+      }
+    });
+  }
+  window.api?.onUpdateAvailable?.((info) => {
+    const el = document.createElement('div');
+    el.className = 'toast info update-toast';
+    el.innerHTML = `${icon('info')}<span>${t('BeanyIK {v} is available.', { v: esc(info.version) })}</span><button class="btn btn-sm" data-ext="${esc(info.url)}">${t('Download')}</button><button class="icon-btn small" data-dismiss>${icon('close')}</button>`;
+    el.addEventListener('click', (e) => {
+      if (e.target.closest('[data-ext]')) openExternal(info.url);
+      if (e.target.closest('[data-ext],[data-dismiss]')) el.remove();
+    });
+    $('#toasts').appendChild(el);
+  });
+  window.api?.getAppVersion?.().then((v) => { appVersion = v; });
+  if (store.get('beanyik_terms', 0) < TERMS_VERSION) showTermsPrompt();
+}
+
+const SHORTCUTS = [
+  ['Tabs & files', [
+    ['Ctrl+T', 'New robot tab'], ['Ctrl+W', 'Close tab'], ['Ctrl+1 … 8', 'Go to tab (1 = Home)'], ['Ctrl+9', 'Last tab'],
+    ['Ctrl+Tab', 'Next tab'], ['Ctrl+O', 'Open robot'], ['Ctrl+S', 'Save'], ['Ctrl+Shift+S', 'Save as'],
+  ]],
+  ['Inverse kinematics', [
+    ['Ctrl+M', 'Move mode (drag the IK target)'], ['Ctrl+R', 'Rotate mode (rotate the IK target)'], ['Esc', 'Back to select mode'],
+    ['Ctrl+Enter', 'Solve numerically'], ['Ctrl+Shift+Enter', 'Solve analytically'], ['Ctrl+H', 'Home pose'],
+  ]],
+  ['Editing', [
+    ['Ctrl+Z', 'Undo'], ['Ctrl+Y', 'Redo'], ['Ctrl+D', 'Duplicate selected joint'], ['Delete', 'Delete selected joint'],
+  ]],
+  ['View', [
+    ['Ctrl+F', 'Show / hide frames'], ['Ctrl+K', 'Workspace cloud'], ['Ctrl+0', 'Fit robot'],
+    ['Alt+1 … 4', 'Iso / front / side / top view'], ['F1', 'This list'],
+  ]],
+];
+
+function toggleShortcuts(show) {
+  const el = $('#shortcuts');
+  if (show === undefined) show = el.hidden;
+  if (!show) { el.hidden = true; return; }
+  el.innerHTML = `
+    <div class="modal-card" role="dialog" aria-label="${t('Keyboard shortcuts')}">
+      <div class="modal-head"><h2>${t('Keyboard shortcuts')}</h2><button class="icon-btn small" data-close-modal>${icon('close')}</button></div>
+      <div class="shortcut-grid">
+        ${SHORTCUTS.map(([group, rows]) => `
+          <section><h3>${t(group)}</h3>
+            ${rows.map(([k, d]) => `<div class="shortcut-row"><span>${t(d)}</span><span class="keys">${k.split(/\+(?=.)/).map((x) => `<kbd>${esc(x)}</kbd>`).join('<i>+</i>')}</span></div>`).join('')}
+          </section>`).join('')}
+      </div>
+    </div>`;
+  el.hidden = false;
+}
+
+function setTool(mode) {
+  state.tool = mode;
+  if (mode !== 'select' && (!state.panelOpen || state.panel !== 'ik')) openPanel('ik');
   renderQuickRail();
   syncTargetGizmo();
 }
@@ -1527,6 +1850,7 @@ function doAction(act, data = {}) {
 const viewport = new Viewport($('#viewport'), {
   onSelect: (id) => select(id),
   onTargetDrag,
+  onTargetDragStart: () => { if (state.ik.live) checkpoint(); },
   onTargetDragEnd: () => { if (state.ik.live) markDirty(); },
 });
 
@@ -1539,6 +1863,7 @@ renderQuickRail();
 renderViewPill();
 wireEvents();
 wireDnD();
+wireModals();
 state.panel = store.get('beanyik_panel', 'chain');
 if (!PANELS.some((p) => p.id === state.panel)) state.panel = 'chain';
 window.api?.onWindowState?.(() => {});

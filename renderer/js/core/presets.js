@@ -98,7 +98,7 @@ export const PRESETS = [
         { name: 'd6', value: '0.08' },
       ],
       joints: [
-        J('revolute', 'Base', { d: 'd1', alpha: '90' }),
+        J('revolute', 'Waist', { d: 'd1', alpha: '90' }),
         J('revolute', 'Shoulder', { theta: '90', a: 'a2' }, { min: '-120', max: '120' }),
         J('revolute', 'Elbow', { alpha: '90' }, { min: '-150', max: '150', home: '-20' }),
         J('revolute', 'Wrist roll', { d: 'd4', alpha: '-90' }),

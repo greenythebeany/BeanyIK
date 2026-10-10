@@ -14,7 +14,14 @@
   <a href="#features">Features</a> ·
   <a href="#getting-started">Getting started</a> ·
   <a href="#writing-your-own-analytic-ik">Analytic IK</a> ·
-  <a href="#keyboard-shortcuts">Shortcuts</a>
+  <a href="#keyboard-shortcuts">Shortcuts</a> ·
+  <a href="#terms-credits--license">Terms &amp; credits</a>
+</p>
+
+<p align="center">
+  <a href="https://github.com/greenythebeany/BeanyIK/releases/latest">
+    <img src="download_icon.png" alt="Download BeanyIK" height="96">
+  </a>
 </p>
 
 ---
@@ -23,7 +30,8 @@ BeanyIK is GreenyBeany's tool for the robotics & cybernetics coursework: build t
 working on (a 6-DOF arm, a robot dog leg, a SCARA…), check your DH table against a 3D model, drag a target
 around and watch the IK solver move the arm, and compare your hand-derived closed-form solution against
 the numerical one. The UI follows the layout of modern Adobe Acrobat: tab bar, an **All tools** panel,
-a floating quick-tools rail beside the canvas, and an icon rail on the right that opens panels.
+a floating quick-tools rail beside the canvas, and an icon rail on the right that opens panels. Kinematics
+are typeset the way a textbook would: θᵢ, dᵢ, aᵢ, αᵢ in a booktabs DH table, and matrices in square brackets.
 
 ## Showcase
 
@@ -55,7 +63,7 @@ a floating quick-tools rail beside the canvas, and an icon rail on the right tha
 - **Forward kinematics**: joint sliders, per-link Aᵢ, ⁰Tₙ, and an end-effector pose HUD.
 - **Numerical IK**: damped least squares (Levenberg–Marquardt) on the Jacobian, with joint
   limits and random restarts. Choose position + orientation or position only. Drag the
-  green target (W move / E rotate) and the robot follows live.
+  green target (`Ctrl+M` move / `Ctrl+R` rotate) and the robot follows live. Every drag is undoable.
 - **Analytic IK.** Write your closed-form solution in the built-in editor. Every branch you return is
   verified with FK and flagged *reaches* or *outside limits*. Each template ships with a worked example.
 - **Jacobian & singularities**: geometric Jacobian, manipulability, smallest singular value, det J, and a
@@ -78,10 +86,23 @@ a floating quick-tools rail beside the canvas, and an icon rail on the right tha
 
 ## Getting started
 
+### Install (Windows)
+
+Download the latest release from the [Releases page](https://github.com/greenythebeany/BeanyIK/releases/latest):
+
+- **`BeanyIK-Setup-x.y.z.exe`**: installer with Start-menu and desktop shortcuts and an uninstaller.
+- **`BeanyIK-Portable-x.y.z.exe`**: a single file that runs without installing.
+
+The builds aren't code-signed, so on first launch Windows SmartScreen may say *"Windows protected your PC"*.
+Click **More info → Run anyway**. Robots are saved to `Documents\BeanyIK` by default. The app checks GitHub for
+new releases on start-up and tells you when one is available.
+
+### Run from source
+
 Requires [Node.js](https://nodejs.org) 18+.
 
 ```bash
-git clone https://github.com/Greenythebeany/BeanyIK.git
+git clone https://github.com/greenythebeany/BeanyIK.git
 cd BeanyIK
 npm install
 npm start
@@ -125,8 +146,15 @@ Hit **Test on current pose**, or use **Analytic** in the IK panel to solve for t
 
 ## Keyboard shortcuts
 
+Press **F1** in the app for the full list.
+
 | Key | Action |
 | --- | --- |
+| `Ctrl+M` | **Move mode**: drag the IK target (press again to leave) |
+| `Ctrl+R` | **Rotate mode**: rotate the IK target |
+| `Esc` | Back to select mode / clear selection |
+| `Ctrl+Enter` / `Ctrl+Shift+Enter` | Solve IK numerically / analytically |
+| `Ctrl+H` | Home pose |
 | `Ctrl+T` (or `Ctrl+N`) | New robot in a new tab |
 | `Ctrl+W` | Close the current tab (asks if there are unsaved changes) |
 | `Ctrl+1` … `Ctrl+8` | Jump to tab: `Ctrl+1` is Home, `Ctrl+2` the first robot, … |
@@ -134,11 +162,12 @@ Hit **Test on current pose**, or use **Analytic** in the IK panel to solve for t
 | `Ctrl+Tab` / `Ctrl+Shift+Tab` | Next / previous tab |
 | `Ctrl+O` / `Ctrl+S` / `Ctrl+Shift+S` | Open / save / save as |
 | `Ctrl+Z` / `Ctrl+Y` | Undo / redo |
-| `Q` / `W` / `E` | Select / move IK target / rotate IK target |
-| `F` | Toggle coordinate frames |
-| `H` | Home pose |
-| `Delete` | Delete the selected joint |
-| `Esc` | Clear selection |
+| `Ctrl+D` / `Delete` | Duplicate / delete the selected joint |
+| `Ctrl+F` | Show / hide coordinate frames |
+| `Ctrl+K` | Workspace cloud |
+| `Ctrl+0` | Fit the robot in view |
+| `Alt+1` … `Alt+4` | Iso / front / side / top view |
+| `F1` | Keyboard shortcuts |
 
 ## Built with
 
@@ -146,6 +175,13 @@ Electron, [three.js](https://threejs.org) (vendored), and no other runtime depen
 `renderer/js/i18n.js`: English text is the key, so adding a language means adding one dictionary. The kinematics core
 (`renderer/js/core`) is plain ES modules with no DOM access, so it runs under Node for the self-test.
 
-## License
+## Terms, credits & license
 
-MIT
+- **License:** [MIT](LICENSE). Free to use, modify and share.
+- **Terms of use & privacy:** [TERMS.md](TERMS.md). In short, it's an educational and design tool: don't use it
+  as the only basis for moving real hardware. There is no telemetry, and the only network call is the GitHub update check.
+- **Credits:** [CREDITS.md](CREDITS.md). The logo was generated with Google Gemini under GreenyBeany's art
+  direction. The app uses the system fonts Segoe UI, Cambria Math and Cascadia Code (no font files bundled),
+  plus Electron (MIT) and three.js (MIT). It also lists the kinematics references.
+
+The same information is in the app under **Menu → About BeanyIK**.

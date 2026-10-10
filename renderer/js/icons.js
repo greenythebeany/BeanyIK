@@ -46,6 +46,7 @@ const P = {
   home2: '<path d="M10 4v12M4 10h12"/><circle cx="10" cy="10" r="3"/>',
   dice: '<rect x="3.5" y="3.5" width="13" height="13" rx="2.5"/><path d="M7 7h.01M13 7h.01M10 10h.01M7 13h.01M13 13h.01" stroke-width="2.2"/>',
   link: '<path d="M8.5 11.5l3-3"/><path d="M9 6.5 10.5 5a3 3 0 0 1 4.5 4.5L13.5 11M11 13.5 9.5 15A3 3 0 0 1 5 10.5L6.5 9"/>',
+  keyboard: '<rect x="2.5" y="5" width="15" height="10" rx="2"/><path d="M5.5 8h.01M8.5 8h.01M11.5 8h.01M14.5 8h.01M5.5 11h.01M14.5 11h.01M8 11.5h4" stroke-width="1.8"/>',
   globe: '<circle cx="10" cy="10" r="7"/><path d="M3 10h14M10 3c2 2 3 4.5 3 7s-1 5-3 7c-2-2-3-4.5-3-7s1-5 3-7z"/>',
   sparkle: '<path d="M10 2.5 11.6 8.4 17.5 10l-5.9 1.6L10 17.5l-1.6-5.9L2.5 10l5.9-1.6z"/>',
 };

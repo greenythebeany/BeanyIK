@@ -2,6 +2,7 @@ const { app, BrowserWindow, ipcMain, dialog, protocol, net, shell, Menu } = requ
 const path = require('path');
 const fs = require('fs');
 const { pathToFileURL } = require('url');
+const { checkForUpdates } = require('./update-checker');
 
 // A "standard" scheme gives the renderer a real origin, which ES modules and
 // import maps need (file:// is an opaque origin in Chromium).
@@ -69,6 +70,16 @@ app.whenReady().then(() => {
   // Ctrl+R reloads) would steal the app's own tab shortcuts.
   Menu.setApplicationMenu(null);
   createWindow();
+
+  // Quiet background update check — only speaks up if a newer release exists.
+  setTimeout(() => {
+    checkForUpdates()
+      .then((result) => {
+        if (result.status === 'available' && mainWindow) mainWindow.webContents.send('update:available', result);
+      })
+      .catch(() => {});
+  }, 4000);
+
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
@@ -87,12 +98,29 @@ ipcMain.on('window:maximize', () => {
 });
 ipcMain.on('window:close', () => mainWindow && mainWindow.close());
 ipcMain.handle('app:getVersion', () => app.getVersion());
+ipcMain.handle('update:check', async () => {
+  try {
+    return await checkForUpdates();
+  } catch (e) {
+    return { status: 'error', error: e.message };
+  }
+});
+ipcMain.on('shell:openExternal', (e, url) => {
+  if (/^https:\/\//i.test(url)) shell.openExternal(url);
+});
 
 // --- files ---
 const ROBOT_FILTERS = [{ name: 'BeanyIK robot', extensions: ['robot.json', 'json'] }];
 
+// Documents\BeanyIK — created on first use so dialogs open somewhere sensible
+function robotsDir() {
+  const dir = path.join(app.getPath('documents'), 'BeanyIK');
+  try { fs.mkdirSync(dir, { recursive: true }); } catch { /* fall back to whatever Windows picks */ }
+  return dir;
+}
+
 ipcMain.handle('file:open', async () => {
-  const res = await dialog.showOpenDialog(mainWindow, { properties: ['openFile'], filters: ROBOT_FILTERS });
+  const res = await dialog.showOpenDialog(mainWindow, { defaultPath: robotsDir(), properties: ['openFile'], filters: ROBOT_FILTERS });
   if (res.canceled || !res.filePaths[0]) return null;
   const filePath = res.filePaths[0];
   return { filePath, content: fs.readFileSync(filePath, 'utf8') };
@@ -110,7 +138,7 @@ ipcMain.handle('file:save', async (e, { content, filePath, suggestedName, saveAs
   let target = filePath;
   if (!target || saveAs) {
     const res = await dialog.showSaveDialog(mainWindow, {
-      defaultPath: suggestedName || 'robot.robot.json',
+      defaultPath: path.join(robotsDir(), suggestedName || 'robot.robot.json'),
       filters: ROBOT_FILTERS,
     });
     if (res.canceled || !res.filePath) return null;
@@ -121,7 +149,7 @@ ipcMain.handle('file:save', async (e, { content, filePath, suggestedName, saveAs
 });
 
 ipcMain.handle('file:export', async (e, { content, suggestedName, filters }) => {
-  const res = await dialog.showSaveDialog(mainWindow, { defaultPath: suggestedName, filters });
+  const res = await dialog.showSaveDialog(mainWindow, { defaultPath: path.join(robotsDir(), suggestedName || 'export'), filters });
   if (res.canceled || !res.filePath) return null;
   fs.writeFileSync(res.filePath, content, 'utf8');
   return { filePath: res.filePath };
