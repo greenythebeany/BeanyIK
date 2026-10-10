@@ -117,7 +117,7 @@
       ],
       "icon": "build/icon.icns",
       "category": "public.app-category.education",
-      "identity": "-",
+      "identity": null,
       "hardenedRuntime": false,
       "artifactName": "BeanyIK-${version}-mac-${arch}.${ext}",
       "gatekeeperAssess": false
@@ -125,7 +125,8 @@
     "dmg": {
       "title": "BeanyIK ${version}",
       "artifactName": "BeanyIK-${version}-mac-${arch}.${ext}"
-    }
+    },
+    "afterPack": "scripts/adhoc-sign.js"
   },
   "allowScripts": {
     "electron@31.7.7": true
