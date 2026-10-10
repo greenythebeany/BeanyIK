@@ -661,6 +661,44 @@ function poseFields(key) {
     <div class="grid3" style="margin-top:10px">${f('roll', t('Roll (x)'), 'deg')}${f('pitch', t('Pitch (y)'), 'deg')}${f('yaw', t('Yaw (z)'), 'deg')}</div>`;
 }
 
+// where the twist that tilts joint j's axis lives. standard DH: the previous
+// link's alpha (joint i turns about z of the frame before it), first joint:
+// the base roll. modified DH: the joint's own alpha(i-1)
+function axisTwistRef(j) {
+  const i = state.robot.joints.indexOf(j);
+  if (state.robot.convention === 'modified') return { obj: j.dh, key: 'alpha', where: 'own' };
+  if (i === 0) return { obj: state.robot.base, key: 'roll', where: 'base' };
+  const prev = state.robot.joints[i - 1];
+  if (prev.mode === 'matrix') return null;
+  return { obj: prev.dh, key: 'alpha', where: 'prev' };
+}
+
+const QUICK_ANGLES = ['0', '90', '-90', '180'];
+const sameAngle = (a, b) => {
+  const x = parseFloat(a), y = parseFloat(b);
+  return Number.isFinite(x) && Number.isFinite(y) && Math.abs((((x - y) % 360) + 540) % 360 - 180) < 1e-6;
+};
+
+function quickAngleButtons(act, current, id) {
+  return `<div class="segmented quick-angles">${QUICK_ANGLES.map((v) => `<button class="${sameAngle(current, v) ? 'on' : ''}" data-act="${act}" data-v="${v}" data-id="${id}">${v.replace('-', '−')}°</button>`).join('')}</div>`;
+}
+
+function jointAxisControls(j) {
+  if (!isActive(j) || j.mode !== 'dh') return '';
+  const ref = axisTwistRef(j);
+  const axisHint = !ref ? t('The previous link is a custom matrix, so tilt the axis inside that matrix.')
+    : ref.where === 'base' ? t('First joint, so this turns the robot base.')
+    : ref.where === 'prev' ? t('Sets α of the previous link, that is what tilts this joint in standard DH.')
+    : t('Sets this joint’s α (i−1), the twist in front of it in modified DH.');
+  return `
+    <div class="section-title" style="margin-top:14px">${t(j.type === 'revolute' ? 'Rotation axis' : 'Slide axis')}</div>
+    ${ref ? quickAngleButtons('axis-tilt', ref.obj[ref.key], j.id) : ''}
+    <p class="hint">${axisHint}</p>
+    <div class="section-title" style="margin-top:10px">${t(j.type === 'revolute' ? 'Zero direction of the link' : 'Link direction')}</div>
+    ${quickAngleButtons('theta-quick', j.dh.theta, j.id)}
+    <p class="hint">${t('Turns the link around this joint’s axis (θ offset).')}</p>`;
+}
+
 function renderProps() {
   const sel = state.selected;
   if (!sel) {
@@ -720,6 +758,7 @@ function renderProps() {
           ${dhField('alpha', modified ? 'α (i−1)' : 'α', angUnit)}
         </div>
         <p class="hint">${t(j.type === 'revolute' ? 'θ = q + offset.' : j.type === 'prismatic' ? 'd = q + offset.' : 'No joint variable.')} ${t('Angles in degrees; expressions allowed.')}</p>
+        ${jointAxisControls(j)}
         ${j.type === 'fixed' ? `
         <div class="section-title" style="margin-top:14px">${t('Point the link')}</div>
         <div class="row" style="gap:6px">
@@ -2053,6 +2092,25 @@ function doAction(act, data = {}) {
     }
     case 'tgt-ee': resetTargetToEE(); state.ik.result = null; return renderPanel();
     case 'ik-num': return runNumericIK();
+    case 'axis-tilt': {
+      const j = getJoint(data.id);
+      const ref = j && axisTwistRef(j);
+      if (!ref) return;
+      checkpoint();
+      ref.obj[ref.key] = data.v;
+      markDirty();
+      refresh({ panel: true });
+      return fitIfOutOfView();
+    }
+    case 'theta-quick': {
+      const j = getJoint(data.id);
+      if (!j) return;
+      checkpoint();
+      j.dh.theta = data.v;
+      markDirty();
+      refresh({ panel: true });
+      return fitIfOutOfView();
+    }
     case 'link-dir': {
       const j = getJoint(data.id);
       if (!j) return;

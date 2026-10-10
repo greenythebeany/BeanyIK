@@ -95,7 +95,7 @@ export const STRINGS = {
       macIntel: 'Intel',
       macIntelHint: 'Older Macs',
       soon: 'Coming with the next release',
-      smartscreen: 'Windows may say "Windows protected your PC" the first time. Click More info, then Run anyway. On macOS right click the app and choose Open.',
+      smartscreen: 'Windows may say "Windows protected your PC" the first time. Click More info, then Run anyway. On macOS allow it once in System Settings, Privacy & Security, Open Anyway.',
       source: 'Or run it from source with Node.js:',
     },
     faq: {
@@ -213,7 +213,7 @@ export const STRINGS = {
       macIntel: 'Intel',
       macIntelHint: 'Staršie Macy',
       soon: 'Príde s ďalším vydaním',
-      smartscreen: 'Windows môže pri prvom spustení napísať „Systém Windows ochránil váš počítač“. Klikni na Ďalšie informácie a potom Spustiť aj tak. Na macOS klikni na aplikáciu pravým tlačidlom a zvoľ Otvoriť.',
+      smartscreen: 'Windows môže pri prvom spustení napísať „Systém Windows ochránil váš počítač“. Klikni na Ďalšie informácie a potom Spustiť aj tak. Na macOS ju raz povoľ v Systémových nastaveniach, Súkromie a bezpečnosť, Aj tak otvoriť.',
       source: 'Alebo ju spusti zo zdrojového kódu cez Node.js:',
     },
     faq: {

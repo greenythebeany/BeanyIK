@@ -106,6 +106,8 @@ Každá šablóna po otvorení prehrá ukážku. Plánovaná dráha je čiarkova
   z panela **Všetky nástroje** kamkoľvek do reťazca, alebo ho pusti na 3D pohľad a pridá sa na koniec.
   Úchytom meníš poradie, kliknutím upravuješ.
 - **Štandardná (distálna) alebo modifikovaná (Craig) DH konvencia** s θ, d, a, α pre každý kĺb, limitmi a domovskou polohou.
+- **Natočenie kĺbov bez rozmýšľania o DH.** Každý kĺb má tlačidlá na naklonenie osi rotácie (0°, 90°, −90°, 180°)
+  a na otočenie článku okolo nej. BeanyIK nastaví správne α alebo θ za teba.
 - **Vlastné matice.** Zadaj transformáciu Aᵢ 4×4 priamo výrazmi s `q` (`cos(q)`, `L1*sin(q)`), keď máš zo školy
   matice namiesto DH tabuľky. Aplikácia skontroluje, že rotačná časť je naozaj rotácia.
 - **Parametre.** Pomenuj dĺžky článkov (`L1 = 0.3`, `L3 = L1 + L2`) a používaj ich v každom poli. Polia prijímajú
@@ -158,12 +160,20 @@ Zostavenia nie sú digitálne podpísané, preto Windows SmartScreen pri prvom s
 ### macOS
 
 Stiahni **`BeanyIK-x.y.z-mac-arm64.dmg`** pre Apple Silicon (M1 a novšie) alebo **`-mac-x64.dmg`** pre Macy s Intelom,
-otvor ho a presuň BeanyIK do Aplikácií. Aplikácia nie je notarizovaná Applom, preto ju prvýkrát otvor
-**pravým kliknutím a voľbou Otvoriť**. Ak macOS hlási, že je aplikácia *poškodená*, spusti raz v Termináli:
+otvor ho a presuň BeanyIK do Aplikácií. Aplikácia nie je notarizovaná Applom (na to treba platený vývojársky účet),
+preto prvé spustenie vyžaduje jeden krok navyše:
+
+1. Otvor BeanyIK. macOS napíše, že aplikáciu nevie overiť. Klikni na **Hotovo**.
+2. Otvor **Systémové nastavenia**, **Súkromie a bezpečnosť**, posuň sa nižšie a pri BeanyIK klikni na **Aj tak otvoriť**.
+3. Potvrď heslom. Odvtedy sa otvára normálne.
+
+Alebo naraz v Termináli:
 
 ```bash
-xattr -cr /Applications/BeanyIK.app
+xattr -dr com.apple.quarantine /Applications/BeanyIK.app
 ```
+
+> BeanyIK 1.2.0 pre Mac mal poškodený podpis a macOS ho označil ako malvér. Použi **1.2.1 alebo novší**.
 
 ### Zo zdrojového kódu
 

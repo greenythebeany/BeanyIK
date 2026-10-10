@@ -43,8 +43,15 @@ jobs:
       - run: npm ci
       - run: npm run dist:mac
         env:
-          # no Apple developer certificate, build unsigned
+          # no Apple developer certificate, the app gets an ad-hoc signature instead
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      # a broken signature makes macOS call the app malware, so check it here
+      - name: Verify signatures
+        run: |
+          for app in dist/mac*/BeanyIK.app; do
+            codesign --verify --deep --strict --verbose=2 "$app"
+            codesign -dv "$app" 2>&1 | grep -E 'Signature|Identifier'
+          done
       - uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/')
         with:
