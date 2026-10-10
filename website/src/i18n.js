@@ -27,7 +27,7 @@ export const STRINGS = {
       items: [
         ['chain', 'blue', 'Drag and drop chain', 'Drop revolute, prismatic, fixed and matrix joints anywhere in the chain. Reorder with the grip, click to edit.'],
         ['table', 'indigo', 'Standard or modified DH', 'θ, d, a and α per joint with limits and a home pose. Switch between the distal and the Craig convention at any time.'],
-        ['matrix', 'purple', 'Your own matrices', 'Course gave you matrices instead of a DH table? Type each Aᵢ with q in it and BeanyIK checks it is a real rotation.'],
+        ['matrix', 'purple', 'Rx · Tz · Rz, like the lectures', 'Build each Aᵢ from elementary rotations and translations, or type the whole matrix. Every factor is drawn as its matrix.'],
         ['target', 'green', 'Numerical IK', 'Damped least squares on the Jacobian with joint limits. Drag the target and the arm follows smoothly.'],
         ['code', 'red', 'Your closed form', 'Write your own analytic solution in the app. Every branch is verified with forward kinematics.'],
         ['shield', 'teal', 'No flicking', 'While dragging, joints move a few degrees per frame at most and never jump to the other elbow solution.'],
@@ -145,7 +145,7 @@ export const STRINGS = {
       items: [
         ['chain', 'blue', 'Reťazec ťahaním', 'Rotačné, posuvné, pevné aj maticové kĺby pustíš kamkoľvek do reťazca. Úchytom meníš poradie, kliknutím upravuješ.'],
         ['table', 'indigo', 'Štandardná aj modifikovaná DH', 'θ, d, a, α pre každý kĺb s limitmi a domovskou polohou. Distálnu a Craigovu konvenciu prepneš kedykoľvek.'],
-        ['matrix', 'purple', 'Vlastné matice', 'Máš zo školy matice namiesto DH tabuľky? Zadaj každú Aᵢ s premennou q a BeanyIK skontroluje, že ide o skutočnú rotáciu.'],
+        ['matrix', 'purple', 'Rx · Tz · Rz ako na prednáškach', 'Každú Aᵢ poskladáš z elementárnych rotácií a posunov, alebo zadáš celú maticu. Každý činiteľ je nakreslený ako matica.'],
         ['target', 'green', 'Numerická IK', 'Tlmené najmenšie štvorce na Jakobiáne s limitmi kĺbov. Ťaháš cieľ a rameno ho plynulo nasleduje.'],
         ['code', 'red', 'Tvoje riešenie', 'Analytické riešenie napíšeš priamo v aplikácii. Každá vetva sa overí priamou kinematikou.'],
         ['shield', 'teal', 'Žiadne preskakovanie', 'Počas ťahania sa kĺby za snímok pohnú najviac o pár stupňov a nikdy nepreskočia na druhú konfiguráciu lakťa.'],

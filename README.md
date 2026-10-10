@@ -111,6 +111,9 @@ Every template plays a demo when you open it. The planned path is dashed and the
 - **Standard (distal) or modified (Craig) DH** with θ, d, a and α per joint, joint limits and a home pose.
 - **Point joints without thinking about DH.** Every joint has one-click buttons to tilt its rotation axis
   (0°, 90°, −90°, 180°) and to turn the link around it. BeanyIK sets the right α or θ for you.
+- **Elementary transforms.** Build Aᵢ as a product of Rx, Ry, Rz, Tx, Ty and Tz, the way lectures write it
+  (`Rz(q) · Tz(d1) · Tx(a2) · Rx(90)`). Each factor is drawn as its matrix with the axis highlighted, and the
+  Matrices panel has a reference card with all six.
 - **Custom matrix joints.** Type the 4×4 transform Aᵢ directly with expressions in `q` (`cos(q)`, `L1*sin(q)`), for when
   your course gives you matrices instead of a DH table. The app checks that the rotation block really is a rotation.
 - **Parameters.** Name your link lengths (`L1 = 0.3`, `L3 = L1 + L2`) and use them in every field. Fields accept

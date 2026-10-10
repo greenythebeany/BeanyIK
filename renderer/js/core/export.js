@@ -35,7 +35,15 @@ export function toMatlab(robot) {
   if (qNames.length) lines.push(`syms ${qNames.join(' ')} real`);
   for (const p of robot.params) lines.push(`${p.name} = ${toMatlabExpr(p.value)};`);
   lines.push('');
-  lines.push('d2r = @(x) x*sym(pi)/180;  % exact degrees -> radians, keeps cos(pi/2) = 0');
+  lines.push('d2r = @(x) x*sym(pi)/180;  % exact degrees to radians, keeps cos(pi/2) = 0');
+  if (robot.joints.some((j) => j.mode === 'elem')) {
+    lines.push('Rx = @(t) [1 0 0 0; 0 cos(t) -sin(t) 0; 0 sin(t) cos(t) 0; 0 0 0 1];');
+    lines.push('Ry = @(t) [cos(t) 0 sin(t) 0; 0 1 0 0; -sin(t) 0 cos(t) 0; 0 0 0 1];');
+    lines.push('Rz = @(t) [cos(t) -sin(t) 0 0; sin(t) cos(t) 0 0; 0 0 1 0; 0 0 0 1];');
+    lines.push('Tx = @(d) [1 0 0 d; 0 1 0 0; 0 0 1 0; 0 0 0 1];');
+    lines.push('Ty = @(d) [1 0 0 0; 0 1 0 d; 0 0 1 0; 0 0 0 1];');
+    lines.push('Tz = @(d) [1 0 0 0; 0 1 0 0; 0 0 1 d; 0 0 0 1];');
+  }
   lines.push(robot.convention === 'modified'
     ? 'A = @(th, d, a, al) [cos(th) -sin(th) 0 a; sin(th)*cos(al) cos(th)*cos(al) -sin(al) -sin(al)*d; sin(th)*sin(al) cos(th)*sin(al) cos(al) cos(al)*d; 0 0 0 1];'
     : 'A = @(th, d, a, al) [cos(th) -sin(th)*cos(al) sin(th)*sin(al) a*cos(th); sin(th) cos(th)*cos(al) -cos(th)*sin(al) a*sin(th); 0 sin(al) cos(al) d; 0 0 0 1];');
@@ -48,7 +56,16 @@ export function toMatlab(robot) {
   robot.joints.forEach((j, i) => {
     const n = i + 1;
     const label = j.name ? `  % ${j.name}` : '';
-    if (j.mode === 'matrix') {
+    if (j.mode === 'elem') {
+      // fields use degrees and q in slider units, so turn q (rad) into degrees for revolute joints
+      const q = isActive(j) ? qNames[k++] : '0';
+      const qExpr = j.type === 'revolute' ? `(${q}*180/sym(pi))` : q;
+      const fac = (j.elems || []).map((e) => {
+        const v = toMatlabExpr(e.v).replace(/\bq\b/g, qExpr);
+        return e.op[0] === 'R' ? `${e.op}(d2r(${v}))` : `${e.op}(${v})`;
+      });
+      lines.push(`A${n} = ${fac.join(' * ') || 'eye(4)'};${label}`);
+    } else if (j.mode === 'matrix') {
       const q = isActive(j) ? qNames[k++] : '0';
       const rows = j.matrix.map((row) => row.map((c) => toMatlabExpr(c)).join(' '));
       lines.push(`q = ${q};${label}`);

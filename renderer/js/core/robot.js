@@ -20,6 +20,8 @@ export function makeJoint(type = 'revolute', overrides = {}) {
     // so a new part isn't invisible
     // fixed links start upright (along z), revolute ones stick out along x
     dh: { theta: '0', d: type === 'fixed' ? '0.15' : '0', a: isPrism || type === 'fixed' ? '0' : '0.2', alpha: '0' },
+    // elementary transforms, multiplied left to right: [{ op: 'Rz', v: 'q' }, ...]
+    elems: [],
     matrix: [
       ['cos(q)', '-sin(q)', '0', '0'],
       ['sin(q)', 'cos(q)', '0', '0'],
@@ -81,6 +83,35 @@ function poseFrom(spec, scope, errors, prefix) {
   return M.fromXYZRPY(v.x, v.y, v.z, v.roll * M.DEG, v.pitch * M.DEG, v.yaw * M.DEG);
 }
 
+export const ELEMENTARY = ['Rx', 'Ry', 'Rz', 'Tx', 'Ty', 'Tz'];
+
+// one elementary transform, rotations take degrees, translations metres
+export function elementary(op, v) {
+  switch (op) {
+    case 'Rx': return M.rotX(v * M.DEG);
+    case 'Ry': return M.rotY(v * M.DEG);
+    case 'Rz': return M.rotZ(v * M.DEG);
+    case 'Tx': return M.trans(v, 0, 0);
+    case 'Ty': return M.trans(0, v, 0);
+    case 'Tz': return M.trans(0, 0, v);
+    default: return M.identity(4);
+  }
+}
+
+// the same link written as elementary transforms, so switching modes keeps the pose
+export function dhToElems(j, modified) {
+  const off = (base, isVar) => {
+    const b = String(base ?? '0').trim();
+    if (!isVar) return b;
+    return /^-?0*(\.0*)?$/.test(b) ? 'q' : `q + ${b}`;
+  };
+  const th = { op: 'Rz', v: off(j.dh.theta, j.type === 'revolute') };
+  const d = { op: 'Tz', v: off(j.dh.d, j.type === 'prismatic') };
+  const a = { op: 'Tx', v: String(j.dh.a ?? '0') };
+  const al = { op: 'Rx', v: String(j.dh.alpha ?? '0') };
+  return modified ? [al, a, th, d] : [th, d, a, al];
+}
+
 // errors go into prep.errors["jointId.field"] so the UI can mark the field
 export function prepare(robot) {
   const { scope, errors: paramErrors } = resolveParams(robot);
@@ -138,6 +169,27 @@ export function prepare(robot) {
       } catch (e) {
         errors[`${j.id}.matrix`] = e.message;
       }
+    } else if (j.mode === 'elem') {
+      // R values are degrees, T values metres. q is the joint value in the same
+      // units as its sliders (degrees for revolute, metres for prismatic)
+      const unitQ = j.type === 'revolute' ? 1 / M.DEG : 1;
+      const factors = (j.elems || []).map((e, k) => {
+        try {
+          const { fn, vars } = compile(e.v);
+          return { op: e.op, fn, usesQ: vars.includes('q') };
+        } catch (err) {
+          errors[`${j.id}.e${k}`] = err.message;
+          return { op: e.op, fn: () => 0, usesQ: false };
+        }
+      });
+      if (active && !factors.some((f) => f.usesQ)) errors[`${j.id}.elems`] = 'Use q in one of the factors, otherwise the joint cannot move';
+      const local = { ...scope };
+      link.transform = (q) => {
+        local.q = q * unitQ;
+        let T = M.identity(4);
+        for (const f of factors) T = M.mul(T, elementary(f.op, f.fn(local)));
+        return T;
+      };
     } else {
       const theta = num('theta', j.dh.theta) * M.DEG;
       const d = num('d', j.dh.d);

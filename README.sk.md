@@ -108,6 +108,9 @@ Každá šablóna po otvorení prehrá ukážku. Plánovaná dráha je čiarkova
 - **Štandardná (distálna) alebo modifikovaná (Craig) DH konvencia** s θ, d, a, α pre každý kĺb, limitmi a domovskou polohou.
 - **Natočenie kĺbov bez rozmýšľania o DH.** Každý kĺb má tlačidlá na naklonenie osi rotácie (0°, 90°, −90°, 180°)
   a na otočenie článku okolo nej. BeanyIK nastaví správne α alebo θ za teba.
+- **Elementárne transformácie.** Aᵢ poskladáš ako súčin Rx, Ry, Rz, Tx, Ty a Tz, presne ako na prednáškach
+  (`Rz(q) · Tz(d1) · Tx(a2) · Rx(90)`). Každý činiteľ je nakreslený ako matica so zvýraznenou osou a panel Matice
+  má prehľad všetkých šiestich.
 - **Vlastné matice.** Zadaj transformáciu Aᵢ 4×4 priamo výrazmi s `q` (`cos(q)`, `L1*sin(q)`), keď máš zo školy
   matice namiesto DH tabuľky. Aplikácia skontroluje, že rotačná časť je naozaj rotácia.
 - **Parametre.** Pomenuj dĺžky článkov (`L1 = 0.3`, `L3 = L1 + L2`) a používaj ich v každom poli. Polia prijímajú
