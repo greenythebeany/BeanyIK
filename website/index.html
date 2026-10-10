@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BeanyIK | Robot kinematics, drag and drop</title>
+    <meta name="description" content="BeanyIK is a free desktop app for robot kinematics. Build a serial robot from parts, describe it with DH parameters or your own matrices and solve forward and inverse kinematics live in 3D." />
+    <meta property="og:title" content="BeanyIK" />
+    <meta property="og:description" content="Build a robot from parts, then make it reach. Free robot kinematics app for Windows and macOS." />
+    <meta property="og:image" content="https://greenythebeany.github.io/BeanyIK/shots/ik-analytic-en.webp" />
+    <meta name="theme-color" content="#10141b" />
+    <link rel="icon" type="image/png" href="/BeanyIK/logo.png" />
+    <script>
+      try {
+        var th = localStorage.getItem('beanyik_site_theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        document.documentElement.dataset.theme = th;
+      } catch (e) {}
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

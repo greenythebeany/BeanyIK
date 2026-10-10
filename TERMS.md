@@ -2,6 +2,8 @@
 
 _Last updated: 10 October 2026_
 
+[Slovenská verzia](TERMS.sk.md)
+
 These terms apply to the BeanyIK desktop application ("the app") published by
 GreenyBeany ("the author") at <https://github.com/greenythebeany/BeanyIK>.
 By installing or using the app you agree to them.
@@ -47,8 +49,10 @@ BeanyIK has no accounts, no analytics and no telemetry.
 - The only network request the app makes on its own is an **update check**. On
   start-up it asks the public GitHub API
   (`api.github.com/repos/greenythebeany/BeanyIK/releases/latest`) whether a newer
-  version exists. That request sends the usual HTTP metadata (your IP address, a
-  user-agent string) to GitHub and nothing about your robots. See
+  version exists. You can turn this off in the *About* dialog. If you accept an
+  update, the installer is downloaded from the project's GitHub releases. These
+  requests send the usual HTTP metadata (your IP address, a user-agent string) to
+  GitHub and nothing about your robots. See
   [GitHub's privacy statement](https://docs.github.com/site-policy/privacy-policies/github-general-privacy-statement).
 - Links you click (GitHub, this document) open in your normal web browser.
 
@@ -62,8 +66,9 @@ OR PERSONS, ARISING FROM THE USE OF THE APP OR OF RESULTS PRODUCED WITH IT.
 
 ## 6. Unsigned builds
 
-Windows builds are not code-signed, so Windows SmartScreen may warn on first
-launch ("Windows protected your PC"). Click *More info*, then *Run anyway*. Only download
+Windows and macOS builds are not code-signed, so Windows SmartScreen may warn on
+first launch ("Windows protected your PC"). Click *More info*, then *Run anyway*. On
+macOS, open the app the first time with right click and *Open*. Only download
 BeanyIK from the official GitHub releases page linked above.
 
 ## 7. Changes

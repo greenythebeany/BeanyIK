@@ -560,6 +560,20 @@ sub, sup { font-size: 0.72em; line-height: 0; }
 }
 .modal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
 .modal-head h2 { margin: 0; font-size: 18px; font-weight: 800; }
+.update-card { width: min(560px, calc(100vw - 48px)); }
+.update-head { display: flex; gap: 14px; align-items: center; margin-bottom: 14px; }
+.update-head img { width: 56px; height: 56px; border-radius: 14px; }
+.update-head h2 { margin: 0; font-size: 18px; font-weight: 800; }
+.update-head p { margin: 3px 0 0; color: var(--text-3); }
+.update-notes { max-height: 260px; overflow: auto; border: 1px solid var(--border); border-radius: 10px; padding: 4px 14px; background: var(--bg-sunken); margin-bottom: 10px; }
+.update-notes h4 { margin: 12px 0 4px; font-size: 13px; }
+.update-notes ul { margin: 0 0 6px; padding-left: 18px; }
+.update-notes li, .update-notes p { line-height: 1.5; color: var(--text-2); margin: 3px 0; }
+.update-progress .bar { height: 8px; border-radius: 4px; background: var(--bg-sunken); border: 1px solid var(--border); overflow: hidden; margin: 6px 0 8px; }
+.update-progress .bar span { display: block; height: 100%; background: var(--accent); transition: width 0.15s; }
+.update-actions { margin-top: 16px; gap: 8px; align-items: center; }
+.update-actions > * { flex: 0 0 auto; }
+.update-actions .grow { flex: 1; }
 .confirm-card { width: min(440px, calc(100vw - 48px)); }
 .confirm-body { display: flex; gap: 12px; align-items: flex-start; }
 .confirm-body .ico, .confirm-body > svg { width: 22px; height: 22px; color: var(--warn); flex-shrink: 0; margin-top: 1px; }
@@ -582,3 +596,7 @@ kbd {
 .about-section ul { margin: 0; padding-left: 18px; }
 .about-section a { color: var(--accent); text-decoration: none; cursor: pointer; }
 .about-section a:hover { text-decoration: underline; }
+
+/* macOS: native traffic lights sit top left, so hide ours and make room */
+.mac .win-buttons { display: none; }
+.mac .appbar { padding-left: 84px; padding-right: 12px; }
