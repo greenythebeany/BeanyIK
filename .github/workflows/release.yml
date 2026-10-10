@@ -1,10 +1,11 @@
 name: Release
 
 # push a tag like v1.2.0 and this builds Windows + macOS and attaches
-# everything to the GitHub release for that tag
+# everything to the GitHub release for that tag. pull requests just build.
 on:
   push:
     tags: ['v*']
+  pull_request:
   workflow_dispatch:
 
 permissions:
