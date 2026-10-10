@@ -1744,7 +1744,8 @@ function showAbout(tab = 'about') {
         <button class="btn btn-sm" data-ext="${REPO_URL}/issues">${icon('warn')}${t('Report a bug')}</button>
         <button class="btn btn-sm" data-act-modal="update">${icon('rotate')}${t('Check for updates')}</button>
       </div>
-      <div id="update-result" class="hint" style="margin-top:10px"></div>`,
+      <div id="update-result" class="hint" style="margin-top:10px"></div>
+      <label class="switch" style="margin-top:14px"><input type="checkbox" data-auto-update ${store.get('beanyik_auto_update', true) ? 'checked' : ''}><span class="track"></span>${t('Check for updates when BeanyIK starts')}</label>`,
     credits: `
       <div class="about-section">
         <h3>${t('Logo')}</h3>
@@ -1817,6 +1818,12 @@ function closeModals() {
 }
 
 function wireModals() {
+  $('#about').addEventListener('change', (e) => {
+    if (e.target.matches('[data-auto-update]')) {
+      store.set('beanyik_auto_update', e.target.checked);
+      window.api?.setAutoUpdateCheck?.(e.target.checked);
+    }
+  });
   for (const id of ['#about', '#shortcuts']) {
     $(id).addEventListener('click', async (e) => {
       if (e.target === e.currentTarget || e.target.closest('[data-close-modal]')) return closeModals();
@@ -1834,24 +1841,140 @@ function wireModals() {
         out.textContent = t('Checking…');
         const res = await window.api?.checkForUpdates?.();
         if (!res) out.textContent = t('Update check is only available in the desktop app.');
-        else if (res.status === 'available') out.innerHTML = `${t('Version {v} is available.', { v: esc(res.version) })} <a data-ext="${esc(res.url)}">${t('Download')}</a>`;
+        else if (res.status === 'available') { out.textContent = ''; closeModals(); showUpdate(res); }
         else if (res.status === 'up-to-date') out.textContent = t('You have the latest version.');
         else out.textContent = t('Could not check for updates: {err}', { err: res.error || '' });
       }
     });
   }
-  window.api?.onUpdateAvailable?.((info) => {
-    const el = document.createElement('div');
-    el.className = 'toast info update-toast';
-    el.innerHTML = `${icon('info')}<span>${t('BeanyIK {v} is available.', { v: esc(info.version) })}</span><button class="btn btn-sm" data-ext="${esc(info.url)}">${t('Download')}</button><button class="icon-btn small" data-dismiss>${icon('close')}</button>`;
-    el.addEventListener('click', (e) => {
-      if (e.target.closest('[data-ext]')) openExternal(info.url);
-      if (e.target.closest('[data-ext],[data-dismiss]')) el.remove();
-    });
-    $('#toasts').appendChild(el);
-  });
+  wireUpdates();
   window.api?.getAppVersion?.().then((v) => { appVersion = v; });
   if (store.get('beanyik_terms', 0) < TERMS_VERSION) showTermsPrompt();
+}
+
+// updates
+
+const update = { info: null, stage: 'idle', progress: null, file: null, error: '' };
+
+const mb = (n) => (n / 1048576).toFixed(1);
+
+// release notes are short markdown, render the bits we use
+function notesHTML(md) {
+  const lines = String(md || '').split(/\r?\n/);
+  let html = '', inList = false;
+  const inline = (s) => esc(s).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/`(.+?)`/g, '<code>$1</code>');
+  for (const raw of lines) {
+    const line = raw.trim();
+    const li = /^[*-]\s+(.*)$/.exec(line);
+    if (li) { if (!inList) { html += '<ul>'; inList = true; } html += `<li>${inline(li[1])}</li>`; continue; }
+    if (inList) { html += '</ul>'; inList = false; }
+    if (!line || line.startsWith('<')) continue;
+    const h = /^#{1,4}\s+(.*)$/.exec(line);
+    html += h ? `<h4>${inline(h[1])}</h4>` : /^\*\*(.+)\*\*$/.test(line) ? `<h4>${inline(line.slice(2, -2))}</h4>` : `<p>${inline(line)}</p>`;
+  }
+  if (inList) html += '</ul>';
+  return html;
+}
+
+function renderUpdate() {
+  const el = $('#update');
+  const u = update;
+  if (!u.info) { el.hidden = true; return; }
+  const i = u.info;
+  let body = '', actions = '';
+  if (u.stage === 'prompt') {
+    body = `<div class="update-notes">${notesHTML(i.notes) || `<p>${t('See the release page for details.')}</p>`}</div>
+      ${i.canInstall ? `<p class="hint">${t(i.portable ? 'The new portable version is saved next to this one and started for you.' : 'BeanyIK downloads the installer, checks it, then closes and starts the update. Your open robots are kept.')}</p>` : ''}`;
+    actions = `
+      <button class="btn btn-quiet" data-upd="skip">${t('Skip this version')}</button>
+      <span class="grow"></span>
+      <button class="btn" data-upd="later">${t('Later')}</button>
+      ${i.canInstall
+        ? `<button class="btn btn-primary" data-upd="download">${icon('download')}${t('Update now')}</button>`
+        : `<button class="btn btn-primary" data-upd="page">${icon('download')}${t('Download from GitHub')}</button>`}`;
+  } else if (u.stage === 'downloading') {
+    const p = u.progress || { received: 0, total: i.size };
+    const pct = p.total ? Math.round((p.received / p.total) * 100) : 0;
+    body = `<div class="update-progress"><div class="bar"><span style="width:${pct}%"></span></div>
+      <div class="hint">${t('Downloading {a} of {b} MB', { a: mb(p.received), b: mb(p.total || i.size) })} · ${pct}%</div></div>`;
+    actions = `<span class="grow"></span><button class="btn" disabled>${t('Downloading…')}</button>`;
+  } else if (u.stage === 'ready') {
+    body = `<div class="notice ok">${icon('check')}<div>${t(u.verified ? 'Update downloaded and verified.' : 'Update downloaded.')} ${t(i.portable ? 'The new version starts and this one closes.' : 'BeanyIK closes and the installer opens. Your open robots come back next time.')}</div></div>`;
+    actions = `<span class="grow"></span><button class="btn" data-upd="later">${t('Later')}</button><button class="btn btn-primary" data-upd="install">${icon('rotate')}${t(i.portable ? 'Restart now' : 'Install and restart')}</button>`;
+  } else if (u.stage === 'error') {
+    body = `<div class="notice err">${icon('warn')}<div>${esc(u.error)}</div></div>`;
+    actions = `<span class="grow"></span><button class="btn" data-upd="later">${t('Close')}</button><button class="btn btn-primary" data-upd="page">${icon('download')}${t('Download from GitHub')}</button>`;
+  }
+  el.innerHTML = `
+    <div class="modal-card update-card" role="dialog" aria-label="${t('Update available')}">
+      <div class="update-head">
+        <img src="logo.png" alt="">
+        <div><h2>${t('Update available')}</h2>
+          <p>${t('BeanyIK {v} is out. You have {c}.', { v: esc(i.version), c: esc(i.current || appVersion) })}${i.size ? ` · ${mb(i.size)} MB` : ''}</p></div>
+      </div>
+      ${body}
+      <div class="row update-actions">${actions}</div>
+    </div>`;
+  el.hidden = false;
+}
+
+function showUpdate(info) {
+  update.info = info;
+  update.stage = 'prompt';
+  update.error = '';
+  renderUpdate();
+}
+
+async function startUpdateDownload() {
+  update.stage = 'downloading';
+  update.progress = { received: 0, total: update.info.size };
+  renderUpdate();
+  const res = await window.api.downloadUpdate();
+  if (!res.ok) {
+    update.stage = 'error';
+    update.error = t('Could not download the update: {err}', { err: res.error });
+  } else {
+    update.stage = 'ready';
+    update.file = res.file;
+    update.verified = res.verified;
+  }
+  renderUpdate();
+}
+
+async function installUpdate() {
+  // keep every open tab, the home screen offers to reopen them
+  stashActive();
+  saveSessionNow();
+  const res = await window.api.installUpdate(update.file);
+  if (!res.ok) {
+    update.stage = 'error';
+    update.error = res.error;
+    renderUpdate();
+  }
+}
+
+function wireUpdates() {
+  const autoCheck = store.get('beanyik_auto_update', true);
+  window.api?.setAutoUpdateCheck?.(autoCheck);
+  window.api?.onUpdateAvailable?.((info) => {
+    if (store.get('beanyik_skip_version', '') === info.version) return;
+    if (update.info) return;
+    showUpdate(info);
+  });
+  window.api?.onUpdateProgress?.((p) => {
+    update.progress = p;
+    if (update.stage === 'downloading') renderUpdate();
+  });
+  $('#update').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-upd]');
+    if (!b) return;
+    const act = b.dataset.upd;
+    if (act === 'later') { update.info = null; renderUpdate(); }
+    if (act === 'skip') { store.set('beanyik_skip_version', update.info.version); update.info = null; renderUpdate(); }
+    if (act === 'page') openExternal(update.info.url);
+    if (act === 'download') startUpdateDownload();
+    if (act === 'install') installUpdate();
+  });
 }
 
 const SHORTCUTS = [

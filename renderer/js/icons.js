@@ -33,6 +33,7 @@ const P = {
   zoomOut: '<circle cx="9" cy="9" r="5.5"/><path d="m13 13 4 4M6.5 9h5"/>',
   folder: '<path d="M2.5 5.5a1 1 0 0 1 1-1h4l2 2h7a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1h-13a1 1 0 0 1-1-1z"/>',
   file: '<path d="M5 2.5h6.5l3.5 3.5v11.5H5z"/><path d="M11.5 2.5V6H15"/>',
+  download: '<path d="M10 3v9M6.5 8.5 10 12l3.5-3.5"/><path d="M4 13v3.5h12V13"/>',
   export: '<path d="M10 12V3M6.5 6.5 10 3l3.5 3.5"/><path d="M4 11v5.5h12V11"/>',
   play: '<path d="M6 4l10 6-10 6z"/>',
   stop: '<rect x="5" y="5" width="10" height="10" rx="1.5"/>',

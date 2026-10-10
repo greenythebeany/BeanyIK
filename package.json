@@ -1,7 +1,7 @@
 {
   "name": "beanyik",
   "productName": "BeanyIK",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Drag & drop robot kinematics builder with DH parameters, custom matrices and forward & inverse kinematics",
   "main": "main.js",
   "private": true,
@@ -11,13 +11,13 @@
     "start": "electron .",
     "vendor": "node scripts/vendor.js",
     "test": "node scripts/selftest.mjs && node scripts/demo-check.mjs && node scripts/flick-check.mjs",
-    "dist": "cross-env CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder"
+    "dist": "cross-env CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --win --publish never",
+    "dist:mac": "electron-builder --mac --publish never"
   },
-  "dependencies": {},
   "devDependencies": {
     "cross-env": "^10.1.0",
     "electron": "^31.3.1",
-    "electron-builder": "^24.13.3",
+    "electron-builder": "^26.15.3",
     "three": "0.170.0"
   },
   "build": {
@@ -31,12 +31,13 @@
     "files": [
       "main.js",
       "preload.js",
-      "update-checker.js",
+      "updater.js",
       "icon.png",
       "LICENSE",
       "TERMS.md",
       "CREDITS.md",
-      "renderer/**/*"
+      "renderer/**/*",
+      "TERMS.sk.md"
     ],
     "icon": "build/icon.ico",
     "win": {
@@ -60,13 +61,26 @@
       "oneClick": false,
       "perMachine": false,
       "allowToChangeInstallationDirectory": true,
-      "license": "build/license.txt",
       "installerIcon": "build/icon.ico",
       "uninstallerIcon": "build/icon.ico",
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "BeanyIK",
-      "artifactName": "BeanyIK-Setup-${version}.${ext}"
+      "artifactName": "BeanyIK-Setup-${version}.${ext}",
+      "include": "build/installer.nsh",
+      "runAfterFinish": true,
+      "deleteAppDataOnUninstall": false,
+      "installerSidebar": "build/installerSidebar.bmp",
+      "uninstallerSidebar": "build/uninstallerSidebar.bmp",
+      "installerHeader": "build/installerHeader.bmp",
+      "installerHeaderIcon": "build/icon.ico",
+      "multiLanguageInstaller": true,
+      "installerLanguages": [
+        "en_US",
+        "sk_SK"
+      ],
+      "displayLanguageSelector": true,
+      "unicode": true
     },
     "portable": {
       "artifactName": "BeanyIK-Portable-${version}.${ext}"
@@ -77,6 +91,39 @@
       ],
       "category": "Education",
       "icon": "icon.png"
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "greenythebeany",
+      "repo": "BeanyIK",
+      "releaseType": "release"
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.icns",
+      "category": "public.app-category.education",
+      "identity": null,
+      "hardenedRuntime": false,
+      "artifactName": "BeanyIK-${version}-mac-${arch}.${ext}"
+    },
+    "dmg": {
+      "title": "BeanyIK ${version}",
+      "artifactName": "BeanyIK-${version}-mac-${arch}.${ext}"
     }
   },
   "allowScripts": {

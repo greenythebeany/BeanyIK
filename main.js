@@ -2,7 +2,9 @@ const { app, BrowserWindow, ipcMain, dialog, protocol, net, shell, Menu } = requ
 const path = require('path');
 const fs = require('fs');
 const { pathToFileURL } = require('url');
-const { checkForUpdates } = require('./update-checker');
+const { checkForUpdates, downloadUpdate, installAndQuit } = require('./updater');
+
+let autoUpdateCheck = true; // renderer turns this off if the user disabled it
 
 // app:// instead of file:// so ES modules + the import map work
 protocol.registerSchemesAsPrivileged([
@@ -17,7 +19,10 @@ function createWindow() {
     height: 900,
     minWidth: 1100,
     minHeight: 640,
-    frame: false,
+    // mac keeps its traffic lights, windows/linux get our own buttons
+    ...(process.platform === 'darwin'
+      ? { titleBarStyle: 'hiddenInset', trafficLightPosition: { x: 14, y: 16 } }
+      : { frame: false }),
     show: false,
     backgroundColor: '#f3f3f3',
     icon: path.join(__dirname, 'icon.png'),
@@ -43,17 +48,29 @@ function createWindow() {
 
 // screenshots for the readme: BEANYIK_SNAPSHOT=out.png BEANYIK_SNAPSHOT_JS=setup.js npm start
 async function snapshotAndQuit(out) {
-  mainWindow.setContentSize(1600, 940);
+  const env = process.env;
+  mainWindow.setContentSize(Number(env.BEANYIK_W) || 1600, Number(env.BEANYIK_H) || 940);
   mainWindow.show();
   await new Promise((r) => setTimeout(r, 1500));
-  if (process.env.BEANYIK_SNAPSHOT_JS) {
-    await mainWindow.webContents.executeJavaScript(fs.readFileSync(process.env.BEANYIK_SNAPSHOT_JS, 'utf8'));
-    await new Promise((r) => setTimeout(r, 1500));
+  if (env.BEANYIK_SNAPSHOT_JS) {
+    await mainWindow.webContents.executeJavaScript(fs.readFileSync(env.BEANYIK_SNAPSHOT_JS, 'utf8'));
+    await new Promise((r) => setTimeout(r, Number(env.BEANYIK_WAIT) || 1500));
   }
-  const img = await mainWindow.webContents.capturePage();
-  fs.writeFileSync(out, img.toPNG());
+  // BEANYIK_FRAMES=n captures n frames (out-001.png ...) for animations
+  const frames = Number(env.BEANYIK_FRAMES) || 1;
+  for (let i = 0; i < frames; i++) {
+    const t0 = Date.now();
+    const img = await mainWindow.webContents.capturePage();
+    const file = frames > 1 ? out.replace(/\.png$/, `-${String(i + 1).padStart(3, '0')}.png`) : out;
+    fs.writeFileSync(file, img.toPNG());
+    const left = (Number(env.BEANYIK_FRAME_MS) || 80) - (Date.now() - t0);
+    if (left > 0) await new Promise((r) => setTimeout(r, left));
+  }
   app.quit();
 }
+
+// clean profile for screenshots
+if (process.env.BEANYIK_PROFILE) app.setPath('userData', process.env.BEANYIK_PROFILE);
 
 app.whenReady().then(() => {
   const rendererRoot = path.join(__dirname, 'renderer');
@@ -65,12 +82,22 @@ app.whenReady().then(() => {
     return net.fetch(pathToFileURL(filePath).toString());
   });
 
-  // default menu eats Ctrl+W / Ctrl+R, we use those ourselves
-  Menu.setApplicationMenu(null);
+  // default menu eats Ctrl+W / Ctrl+R, we use those ourselves. mac needs a
+  // menu for Cmd+Q, copy/paste etc, so it gets a minimal one there
+  if (process.platform === 'darwin') {
+    Menu.setApplicationMenu(Menu.buildFromTemplate([
+      { role: 'appMenu' },
+      { role: 'editMenu' },
+      { label: 'Window', submenu: [{ role: 'minimize' }, { role: 'zoom' }, { type: 'separator' }, { role: 'front' }] },
+    ]));
+  } else {
+    Menu.setApplicationMenu(null);
+  }
   createWindow();
 
   // check github for a newer release, stay quiet otherwise
   setTimeout(() => {
+    if (!autoUpdateCheck || process.env.BEANYIK_SNAPSHOT) return;
     checkForUpdates()
       .then((result) => {
         if (result.status === 'available' && mainWindow) mainWindow.webContents.send('update:available', result);
@@ -103,6 +130,28 @@ ipcMain.handle('update:check', async () => {
     return { status: 'error', error: e.message };
   }
 });
+ipcMain.handle('update:download', async (e) => {
+  try {
+    const res = await downloadUpdate((p) => {
+      if (!e.sender.isDestroyed()) e.sender.send('update:progress', p);
+      if (mainWindow && p.total) mainWindow.setProgressBar(p.received / p.total);
+    });
+    if (mainWindow) mainWindow.setProgressBar(-1);
+    return { ok: true, ...res };
+  } catch (err) {
+    if (mainWindow) mainWindow.setProgressBar(-1);
+    return { ok: false, error: err.message };
+  }
+});
+ipcMain.handle('update:install', (e, file) => {
+  try {
+    installAndQuit(file);
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err.message };
+  }
+});
+ipcMain.on('update:setAutoCheck', (e, on) => { autoUpdateCheck = on !== false; });
 ipcMain.on('shell:openExternal', (e, url) => {
   if (/^https:\/\//i.test(url)) shell.openExternal(url);
 });
