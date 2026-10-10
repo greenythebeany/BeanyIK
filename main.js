@@ -4,8 +4,7 @@ const fs = require('fs');
 const { pathToFileURL } = require('url');
 const { checkForUpdates } = require('./update-checker');
 
-// A "standard" scheme gives the renderer a real origin, which ES modules and
-// import maps need (file:// is an opaque origin in Chromium).
+// app:// instead of file:// so ES modules + the import map work
 protocol.registerSchemesAsPrivileged([
   { scheme: 'app', privileges: { standard: true, secure: true, supportFetchAPI: true, corsEnabled: true } },
 ]);
@@ -42,7 +41,7 @@ function createWindow() {
   });
 }
 
-// Dev helper for README screenshots: BEANYIK_SNAPSHOT=out.png [BEANYIK_SNAPSHOT_JS=script] npm start
+// screenshots for the readme: BEANYIK_SNAPSHOT=out.png BEANYIK_SNAPSHOT_JS=setup.js npm start
 async function snapshotAndQuit(out) {
   mainWindow.setContentSize(1600, 940);
   mainWindow.show();
@@ -66,12 +65,11 @@ app.whenReady().then(() => {
     return net.fetch(pathToFileURL(filePath).toString());
   });
 
-  // No native menu: its default accelerators (Ctrl+W closes the window,
-  // Ctrl+R reloads) would steal the app's own tab shortcuts.
+  // default menu eats Ctrl+W / Ctrl+R, we use those ourselves
   Menu.setApplicationMenu(null);
   createWindow();
 
-  // Quiet background update check — only speaks up if a newer release exists.
+  // check github for a newer release, stay quiet otherwise
   setTimeout(() => {
     checkForUpdates()
       .then((result) => {
@@ -89,7 +87,7 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
 });
 
-// --- window controls ---
+// window controls
 ipcMain.on('window:minimize', () => mainWindow && mainWindow.minimize());
 ipcMain.on('window:maximize', () => {
   if (!mainWindow) return;
@@ -109,13 +107,13 @@ ipcMain.on('shell:openExternal', (e, url) => {
   if (/^https:\/\//i.test(url)) shell.openExternal(url);
 });
 
-// --- files ---
+// files
 const ROBOT_FILTERS = [{ name: 'BeanyIK robot', extensions: ['robot.json', 'json'] }];
 
-// Documents\BeanyIK — created on first use so dialogs open somewhere sensible
+// Documents\BeanyIK, so the dialogs don't open in some random folder
 function robotsDir() {
   const dir = path.join(app.getPath('documents'), 'BeanyIK');
-  try { fs.mkdirSync(dir, { recursive: true }); } catch { /* fall back to whatever Windows picks */ }
+  try { fs.mkdirSync(dir, { recursive: true }); } catch { /* whatever, windows picks */ }
   return dir;
 }
 

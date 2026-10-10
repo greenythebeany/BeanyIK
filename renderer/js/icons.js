@@ -1,4 +1,4 @@
-// Outline icon set (20x20 grid, 1.5 stroke) in the spirit of Spectrum UI icons.
+// icons, 20x20 viewbox, 1.5 stroke
 const P = {
   menu: '<path d="M3 5.5h14M3 10h14M3 14.5h14"/>',
   home: '<path d="M3.5 9 10 3.5 16.5 9v7a.5.5 0 0 1-.5.5h-4v-5h-4v5H4a.5.5 0 0 1-.5-.5z"/>',
@@ -51,7 +51,7 @@ const P = {
   sparkle: '<path d="M10 2.5 11.6 8.4 17.5 10l-5.9 1.6L10 17.5l-1.6-5.9L2.5 10l5.9-1.6z"/>',
 };
 
-// Colourful palette glyphs (rendered inside coloured tiles).
+// glyphs for the coloured tiles
 const G = {
   revolute: '<circle cx="10" cy="10" r="5.5"/><circle cx="10" cy="10" r="1.6" fill="currentColor"/><path d="M15.5 10a5.5 5.5 0 0 1-2 4.2"/><path d="m14.2 15.6-.7-1.4 1.5-.4"/>',
   prismatic: '<rect x="3" y="7.5" width="9" height="5" rx="1"/><path d="M12 10h5M15 8l2 2-2 2"/>',

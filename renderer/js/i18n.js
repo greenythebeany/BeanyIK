@@ -1,5 +1,4 @@
-// UI translations. English strings are the keys; missing entries fall back
-// to English. Use {name} placeholders for interpolated values.
+// translations, the english text is the key. {name} gets filled in by t()
 
 const SK = {
   // app bar / menu
@@ -32,7 +31,7 @@ const SK = {
   'Start from a template': 'Začni zo šablóny',
   '{n} joints · analytic IK included': '{n} kĺby · analytické IK priložené',
   'Blank robot': 'Prázdny robot',
-  'Empty chain — drag parts in yourself': 'Prázdny reťazec — diely si dotiahni sám',
+  'Empty chain, drag parts in yourself': 'Prázdny reťazec, diely si dotiahni sám',
   'Standard DH': 'Štandardné DH',
   'Modified DH': 'Modifikované DH',
   'Recent': 'Nedávne',
@@ -56,7 +55,7 @@ const SK = {
 
   // tools panel
   'All tools': 'Všetky nástroje',
-  'Build — drag into the chain': 'Stavba — pretiahni do reťazca',
+  'Build: drag into the chain': 'Stavba: pretiahni do reťazca',
   'Revolute joint': 'Rotačný kĺb',
   'Rotates about its z axis': 'Otáča sa okolo svojej osi z',
   'Prismatic joint': 'Posuvný kĺb',
@@ -118,7 +117,7 @@ const SK = {
   'Drag a <b>Revolute</b>, <b>Prismatic</b>, <b>Fixed</b> or <b>Matrix</b> part here from <b>All tools</b>, or click one to append it.': 'Pretiahni sem <b>rotačný</b>, <b>posuvný</b>, <b>pevný</b> alebo <b>maticový</b> diel zo <b>Všetkých nástrojov</b>, alebo naň klikni a pridá sa.',
   'Drag parts from the left to insert them anywhere in the chain. Drag the grip to reorder. Click a link in the 3D view to select it.': 'Diely zľava pretiahni kamkoľvek do reťazca. Ťahaním za úchyt meníš poradie. Kliknutím na článok v 3D ho vyberieš.',
   'custom 4×4 transform': 'vlastná transformácia 4×4',
-  'Select a link in the chain or in the 3D view to edit it. Fields accept expressions — numbers, your parameters (<code>L1</code>), <code>pi</code>, <code>sqrt()</code>, <code>atan2()</code>…': 'Vyber článok v reťazci alebo v 3D a uprav ho. Polia prijímajú výrazy — čísla, tvoje parametre (<code>L1</code>), <code>pi</code>, <code>sqrt()</code>, <code>atan2()</code>…',
+  'Select a link in the chain or in the 3D view to edit it. Fields accept expressions: numbers, your parameters (<code>L1</code>), <code>pi</code>, <code>sqrt()</code>, <code>atan2()</code>…': 'Vyber článok v reťazci alebo v 3D a uprav ho. Polia prijímajú výrazy: čísla, tvoje parametre (<code>L1</code>), <code>pi</code>, <code>sqrt()</code>, <code>atan2()</code>…',
   'Base frame (world → frame 0)': 'Sústava základne (svet → sústava 0)',
   'Tool frame (flange → TCP)': 'Sústava nástroja (príruba → TCP)',
   'Rotation is applied as R = Rz(yaw)·Ry(pitch)·Rx(roll).': 'Rotácia sa skladá ako R = Rz(yaw)·Ry(pitch)·Rx(roll).',
@@ -151,14 +150,14 @@ const SK = {
   'Position only': 'Iba poloha',
   'Target pose': 'Cieľová poloha',
   'Use current': 'Použiť aktuálnu',
-  'Or drag the green target in the 3D view — <b>Ctrl+M</b> move, <b>Ctrl+R</b> rotate.': 'Alebo ťahaj zelený cieľ v 3D — <b>Ctrl+M</b> posun, <b>Ctrl+R</b> rotácia.',
+  'Or drag the green target in the 3D view (<b>Ctrl+M</b> move, <b>Ctrl+R</b> rotate).': 'Alebo ťahaj zelený cieľ v 3D (<b>Ctrl+M</b> posun, <b>Ctrl+R</b> rotácia).',
   'Cancel': 'Zrušiť',
   'Follow target live (numerical)': 'Sledovať cieľ naživo (numericky)',
   'Solve numerically': 'Vyriešiť numericky',
   'Analytic': 'Analyticky',
   'Numerical solver: damped least squares on the geometric Jacobian with joint limits and random restarts. Analytic solver: your closed-form equations in the <b>Analytic IK</b> panel; every branch is checked with forward kinematics.': 'Numerický riešič: tlmené najmenšie štvorce na geometrickom Jakobiáne s limitmi kĺbov a náhodnými reštartmi. Analytický riešič: tvoje rovnice v uzavretom tvare v paneli <b>Analytické IK</b>; každá vetva sa overí priamou kinematikou.',
   'Converged': 'Konvergovalo',
-  'Best effort — target not reached': 'Najlepší pokus — cieľ nedosiahnutý',
+  'Target not reached (best effort)': 'Cieľ nedosiahnutý (najlepší pokus)',
   'position error {p} mm · orientation error {o}° · {n} iterations': 'chyba polohy {p} mm · chyba orientácie {o}° · {n} iterácií',
   ' · restarts used': ' · použité reštarty',
   'Analytic solver returned no solutions (target out of reach?).': 'Analytický riešič nevrátil žiadne riešenie (cieľ mimo dosahu?).',
@@ -168,7 +167,7 @@ const SK = {
   'misses': 'nedosiahne',
   'outside limits': 'mimo limitov',
   'Show': 'Zobraziť',
-  '⁰T_ee — base to end effector': '⁰T_ee — základňa po koncový efektor',
+  '⁰T_ee: base to end effector': '⁰T_ee: základňa po koncový efektor',
   'Jacobian J(q) (6 × n)': 'Jakobián J(q) (6 × n)',
   'All link matrices': 'Všetky matice článkov',
   'Export': 'Export',
@@ -178,10 +177,10 @@ const SK = {
   'No movable joints.': 'Žiadne pohyblivé kĺby.',
   'rows: v<sub>x</sub> v<sub>y</sub> v<sub>z</sub> ω<sub>x</sub> ω<sub>y</sub> ω<sub>z</sub> · columns: q₁…q{n}': 'riadky: v<sub>x</sub> v<sub>y</sub> v<sub>z</sub> ω<sub>x</sub> ω<sub>y</sub> ω<sub>z</sub> · stĺpce: q₁…q{n}',
   'manipulability': 'manipulovateľnosť',
-  'The arm is at (or very near) a singularity — it loses a direction of motion here.': 'Rameno je v singularite (alebo veľmi blízko) — stráca tu jeden smer pohybu.',
+  'The arm is at (or very near) a singularity, so it loses a direction of motion here.': 'Rameno je v singularite (alebo veľmi blízko), takže tu stráca jeden smer pohybu.',
   'Fewer than 6 DOF: manipulability uses the 3 linear rows. ': 'Menej ako 6 DOF: manipulovateľnosť používa 3 lineárne riadky. ',
   'Computed numerically, so it works for custom-matrix joints too.': 'Počítané numericky, takže funguje aj pre maticové kĺby.',
-  'Named constants used anywhere in the robot — link lengths, offsets… Later parameters can use earlier ones (e.g. <code>L3 = L1 + L2</code>).': 'Pomenované konštanty použiteľné kdekoľvek v robotovi — dĺžky článkov, posuny… Neskoršie parametre môžu použiť skoršie (napr. <code>L3 = L1 + L2</code>).',
+  'Named constants you can use anywhere in the robot, like link lengths or offsets. Later parameters can use earlier ones (e.g. <code>L3 = L1 + L2</code>).': 'Pomenované konštanty, ktoré môžeš použiť kdekoľvek v robotovi, napríklad dĺžky článkov alebo posuny. Neskoršie parametre môžu použiť skoršie (napr. <code>L3 = L1 + L2</code>).',
   'name': 'názov',
   'value / expression': 'hodnota / výraz',
   'Remove': 'Odstrániť',
@@ -200,7 +199,7 @@ const SK = {
   // toasts / dialogs
   'Added {what}': 'Pridané: {what}',
   'Add a movable joint first': 'Najprv pridaj pohyblivý kĺb',
-  'Workspace sampled — random joint configurations within limits': 'Pracovný priestor navzorkovaný — náhodné konfigurácie v rámci limitov',
+  'Workspace sampled from random joint configurations within the limits': 'Pracovný priestor navzorkovaný z náhodných konfigurácií v rámci limitov',
   'Not a valid robot file': 'Neplatný súbor robota',
   'Not a BeanyIK robot file': 'Toto nie je súbor robota BeanyIK',
   'Opened {name}': 'Otvorené: {name}',
@@ -214,6 +213,12 @@ const SK = {
   'Untitled robot': 'Nepomenovaný robot',
   'Close tab': 'Zavrieť kartu',
   'Fig.': 'Obr.',
+  'Point the link': 'Smer článku',
+  'Up (+Z)': 'Hore (+Z)',
+  'Forward (+X)': 'Dopredu (+X)',
+  'Down (−Z)': 'Dole (−Z)',
+  "Directions are relative to the previous frame. A fixed link has no joint, so the IK target can't move it; change d (along z) or a (along x) instead.": 'Smery sú vzhľadom na predchádzajúcu sústavu. Pevný článok nemá kĺb, takže ho IK cieľ nepohne; zmeň radšej d (pozdĺž z) alebo a (pozdĺž x).',
+  'The IK target moves joints. Add a revolute or prismatic joint first.': 'IK cieľ hýbe kĺbmi. Najprv pridaj rotačný alebo posuvný kĺb.',
   'About': 'O aplikácii',
   'About BeanyIK': 'O aplikácii BeanyIK',
   'Credits': 'Poďakovanie',
@@ -243,8 +248,8 @@ const SK = {
   'Summary': 'Zhrnutie',
   'Read the full Terms of Use & Privacy': 'Prečítať úplné podmienky používania a ochranu súkromia',
   'BeanyIK is free, open-source software under the MIT License.': 'BeanyIK je bezplatný open-source softvér pod licenciou MIT.',
-  'It is an educational and design tool. Results are numerical approximations — never use it as the only basis for moving real hardware.': 'Je to vzdelávací a návrhový nástroj. Výsledky sú numerické aproximácie — nikdy ich nepoužívaj ako jediný podklad na pohyb skutočného hardvéru.',
-  'The analytic IK panel runs JavaScript you type, locally. Only run code you trust, including code inside robot files from others.': 'Panel analytického IK spúšťa JavaScript, ktorý napíšeš, lokálne. Spúšťaj iba kód, ktorému dôveruješ — aj v súboroch robotov od iných.',
+  'It is an educational and design tool. Results are numerical approximations, so never use it as the only basis for moving real hardware.': 'Je to vzdelávací a návrhový nástroj. Výsledky sú numerické aproximácie, preto ich nikdy nepoužívaj ako jediný podklad na pohyb skutočného hardvéru.',
+  'The analytic IK panel runs JavaScript you type, locally. Only run code you trust, including code inside robot files from others.': 'Panel analytického IK spúšťa JavaScript, ktorý napíšeš, lokálne. Spúšťaj iba kód, ktorému dôveruješ, aj v súboroch robotov od iných.',
   'No accounts, analytics or telemetry. Your robots and settings stay on your computer. The app only contacts GitHub to check for updates.': 'Žiadne účty, analytika ani telemetria. Tvoje roboty a nastavenia zostávajú v počítači. Aplikácia kontaktuje iba GitHub kvôli aktualizáciám.',
   'Provided “as is”, without warranty of any kind.': 'Poskytované „tak, ako je“, bez akejkoľvek záruky.',
   'Before you start, please read the short version of the terms.': 'Skôr než začneš, prečítaj si prosím krátku verziu podmienok.',
@@ -316,7 +321,7 @@ export function t(key, vars) {
   return s;
 }
 
-// Static markup: data-i18n (text), data-i18n-title (title attribute).
+// for the static html (data-i18n / data-i18n-title)
 export function translateStatic(root = document) {
   root.querySelectorAll('[data-i18n]').forEach((el) => {
     if (!el.dataset.i18nKey) el.dataset.i18nKey = el.dataset.i18n;

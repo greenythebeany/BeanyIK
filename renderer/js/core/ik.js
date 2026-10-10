@@ -1,9 +1,5 @@
-// Inverse kinematics.
-//  * Numerical: damped least squares (Levenberg–Marquardt style adaptive
-//    damping) on the numerical geometric Jacobian, with joint limits and
-//    random restarts. Works for any chain the editor can build.
-//  * Analytic: user-supplied closed-form solver (JS function body) stored on
-//    the robot. Every candidate it returns is verified with forward kinematics.
+// IK: damped least squares for any chain, plus the user's own closed form
+// solver (checked with FK afterwards)
 
 import * as M from './mat.js';
 import { endEffector, jacobian, clampToLimits, fk } from './robot.js';
@@ -16,7 +12,7 @@ function poseError(Td, T, mode, rotWeight) {
   return [...ep, ...eo.map((v) => v * rotWeight)];
 }
 
-// Solve (J^T J + λ² I) dq = J^T e  — robust near singularities.
+// (J^T J + λ² I) dq = J^T e, the damping keeps it sane near singularities
 function dlsStep(J, e, lambda) {
   const Jt = M.transpose(J);
   const n = Jt.length;
@@ -78,8 +74,7 @@ function solveFrom(prep, Td, q0, o) {
   return { q, ok, posErr: pe, rotErr: re, iterations: iter };
 }
 
-// Numerical IK. Starts from `seed` (usually the current pose) so motion is
-// continuous while dragging; falls back to random restarts if stuck.
+// starts from the current pose so dragging stays smooth, random restarts if it gets stuck
 export function solveIK(prep, Td, seed, options = {}) {
   const o = { ...DEFAULT_IK_OPTIONS, ...options };
   if (!prep.dof) return { q: [], ok: false, posErr: Infinity, rotErr: Infinity, iterations: 0, error: 'Robot has no movable joints' };
@@ -97,16 +92,15 @@ export function solveIK(prep, Td, seed, options = {}) {
   return best;
 }
 
-// ---- analytic ----------------------------------------------------------
-
+// analytic
 export const ANALYTIC_TEMPLATE = `// Closed-form IK. Return an array of solutions; each solution is an array of
 // joint values (rad for revolute, m for prismatic) in chain order.
 //
 //   T  : desired FLANGE pose as 4x4 [[r11,r12,r13,px],...] in the chain's
 //        base frame (robot base + tool transforms are already removed)
 //   P  : your parameters, e.g. P.L1
-//   h  : helpers — atan2, sqrt, acos, ..., mul, inverse, transpose,
-//        fk(qPartial) -> frames, DEG, wrap(angle)
+//   h  : helpers like atan2, sqrt, acos, mul, inverse, transpose,
+//        fk(qPartial) returns the frames, DEG, wrap(angle)
 //
 // Every returned solution is verified with forward kinematics, so it's fine
 // to return all branches and let the app tell you which ones reach.
@@ -131,7 +125,6 @@ const HELPERS = {
 };
 
 export function compileAnalytic(code) {
-  // The code is the user's own solver typed into their own app.
   // eslint-disable-next-line no-new-func
   return new Function('T', 'P', 'h', code);
 }
@@ -144,11 +137,11 @@ export function solveAnalytic(prep, Td, code) {
   } catch (e) {
     return { solutions: [], error: `Syntax error: ${e.message}` };
   }
-  // Strip base and tool so the solver sees the bare chain.
+  // solver works on the bare chain, so take base and tool off
   const Tflange = M.mul(M.mul(M.invertTransform(prep.base), Td), M.invertTransform(prep.tool));
   const helpers = {
     ...HELPERS,
-    // FK of the bare chain (base = identity) for the first k joints
+    // FK of the first few joints, base = identity
     fk: (qPartial) => {
       let T = M.identity(4);
       const frames = [T];

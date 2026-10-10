@@ -1,5 +1,4 @@
-// Exporters: MATLAB (symbolic FK + Jacobian), DH table as CSV / LaTeX, and
-// plain-text matrices.
+// export to matlab, csv and latex
 import { isActive } from './robot.js';
 
 const toMatlabExpr = (src) => String(src ?? '0').trim()
@@ -29,7 +28,7 @@ export function toMatlab(robot) {
   const qNames = [];
   let k = 0;
   robot.joints.forEach((j) => { if (isActive(j)) qNames.push(`q${++k}`); });
-  lines.push(`% ${robot.name} — exported from BeanyIK`);
+  lines.push(`% ${robot.name}, exported from BeanyIK`);
   lines.push(`% Convention: ${robot.convention === 'modified' ? 'modified (Craig) DH: Rx(alpha) Tx(a) Rz(theta) Tz(d)' : 'standard DH: Rz(theta) Tz(d) Tx(a) Rx(alpha)'}`);
   lines.push('% Joint variables q are in rad (revolute) / m (prismatic).');
   lines.push('');

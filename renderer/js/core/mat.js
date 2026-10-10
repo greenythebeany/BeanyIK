@@ -1,5 +1,4 @@
-// Small dense-matrix toolkit for kinematics. Matrices are arrays of rows
-// (number[][]); 4x4 homogeneous transforms use the usual [R p; 0 1] layout.
+// matrix helpers, matrices are arrays of rows. transforms are [R p; 0 1]
 
 export const DEG = Math.PI / 180;
 
@@ -40,7 +39,7 @@ export function scale(A, s) {
   return A.map((row) => row.map((v) => v * s));
 }
 
-// Gauss-Jordan inverse with partial pivoting. Returns null when singular.
+// gauss jordan, null if singular
 export function inverse(A) {
   const n = A.length;
   const M = A.map((row, i) => [...row, ...identity(n)[i]]);
@@ -79,8 +78,7 @@ export function det(A) {
   return d;
 }
 
-// ---- homogeneous transforms ----
-
+// homogeneous transforms
 export function rotX(t) {
   const c = Math.cos(t), s = Math.sin(t);
   return [[1, 0, 0, 0], [0, c, -s, 0], [0, s, c, 0], [0, 0, 0, 1]];
@@ -119,7 +117,7 @@ export function dhModified(theta, d, a, alpha) {
   ];
 }
 
-// Roll-pitch-yaw (fixed XYZ == Rz(yaw) Ry(pitch) Rx(roll)) <-> rotation.
+// RPY: R = Rz(yaw) Ry(pitch) Rx(roll)
 export function fromXYZRPY(x, y, z, roll, pitch, yaw) {
   const T = mul(mul(rotZ(yaw), rotY(pitch)), rotX(roll));
   T[0][3] = x; T[1][3] = y; T[2][3] = z;
@@ -162,8 +160,7 @@ export function cross(a, b) {
 export function sub3(a, b) { return [a[0] - b[0], a[1] - b[1], a[2] - b[2]]; }
 export function norm(v) { return Math.hypot(...v); }
 
-// Orientation error (axis * angle) taking current rotation Rc to desired Rd,
-// expressed in the base frame: log(Rd * Rc^T).
+// orientation error as axis*angle, log(Rd * Rc^T) in the base frame
 export function orientationError(Rd, Rc) {
   const E = mul(Rd, transpose(Rc));
   const tr = E[0][0] + E[1][1] + E[2][2];
@@ -172,7 +169,7 @@ export function orientationError(Rd, Rc) {
   const v = [E[2][1] - E[1][2], E[0][2] - E[2][0], E[1][0] - E[0][1]];
   if (angle < 1e-9) return [v[0] / 2, v[1] / 2, v[2] / 2];
   if (Math.PI - angle < 1e-6) {
-    // ~180°: axis from the diagonal of (E + I)/2
+    // close to 180°, get the axis from the diagonal
     const xx = (E[0][0] + 1) / 2, yy = (E[1][1] + 1) / 2, zz = (E[2][2] + 1) / 2;
     let axis;
     if (xx >= yy && xx >= zz) { const x = Math.sqrt(xx); axis = [x, E[0][1] / (2 * x), E[0][2] / (2 * x)]; }
@@ -184,7 +181,7 @@ export function orientationError(Rd, Rc) {
   return v.map((x) => x * k);
 }
 
-// Singular values via eigenvalues of the symmetric J J^T (Jacobi rotation).
+// singular values from the eigenvalues of J J^T (jacobi method)
 export function singularValues(J) {
   const A = mul(J, transpose(J));
   const n = A.length;

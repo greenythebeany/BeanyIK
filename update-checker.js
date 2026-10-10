@@ -16,10 +16,7 @@ function isNewer(a, b) {
   return false;
 }
 
-// GitHub releases here aren't tagged with a semver tag (tag_name is just the
-// product name) â€” the version lives in the release title instead, e.g.
-// "BeanyDrive v1.0.0 â€” Discord as your personal cloud drive". Try the tag
-// first in case that ever changes, fall back to the title.
+// tag is vX.Y.Z, release title as a fallback
 async function checkForUpdates() {
   const res = await fetch(API_URL, {
     headers: { Accept: 'application/vnd.github+json', 'User-Agent': 'BeanyIK-update-check' },

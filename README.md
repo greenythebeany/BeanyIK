@@ -61,7 +61,7 @@ are typeset the way a textbook would: θᵢ, dᵢ, aᵢ, αᵢ in a booktabs DH 
 - **Parameters.** Name your link lengths (`L1 = 0.3`, `L3 = L1 + L2`) and use them in every field.
   Fields accept `+ - * / ^`, `pi`, `sin`, `atan2`, `sqrt`, `deg()`/`rad()`…
 - **Forward kinematics**: joint sliders, per-link Aᵢ, ⁰Tₙ, and an end-effector pose HUD.
-- **Numerical IK**: damped least squares (Levenberg–Marquardt) on the Jacobian, with joint
+- **Numerical IK**: damped least squares (Levenberg-Marquardt) on the Jacobian, with joint
   limits and random restarts. Choose position + orientation or position only. Drag the
   green target (`Ctrl+M` move / `Ctrl+R` rotate) and the robot follows live. Every drag is undoable.
 - **Analytic IK.** Write your closed-form solution in the built-in editor. Every branch you return is
@@ -94,7 +94,7 @@ Download the latest release from the [Releases page](https://github.com/greenyth
 - **`BeanyIK-Portable-x.y.z.exe`**: a single file that runs without installing.
 
 The builds aren't code-signed, so on first launch Windows SmartScreen may say *"Windows protected your PC"*.
-Click **More info → Run anyway**. Robots are saved to `Documents\BeanyIK` by default. The app checks GitHub for
+Click **More info**, then **Run anyway**. Robots are saved to `Documents\BeanyIK` by default. The app checks GitHub for
 new releases on start-up and tells you when one is available.
 
 ### Run from source
@@ -128,9 +128,9 @@ npm run vendor  # re-copy three.js from node_modules into renderer/vendor
 Open **Analytic IK solver** (`</>` in the right rail). Your code is the body of a function:
 
 ```js
-// T: target flange pose (4x4) in the chain's base frame — base and tool already removed
+// T: target flange pose (4x4) in the chain's base frame, base and tool already removed
 // P: your parameters (P.L1, ...)
-// h: helpers — atan2, sqrt, acos, hypot, wrap, mul, transpose, rotation, fk(qPartial), ...
+// h: helpers like atan2, sqrt, acos, hypot, wrap, mul, transpose, rotation, fk(qPartial), ...
 const { L1, L2 } = P;
 const x = T[0][3], y = T[1][3];
 const c2 = (x * x + y * y - L1 * L1 - L2 * L2) / (2 * L1 * L2);
@@ -184,4 +184,4 @@ Electron, [three.js](https://threejs.org) (vendored), and no other runtime depen
   direction. The app uses the system fonts Segoe UI, Cambria Math and Cascadia Code (no font files bundled),
   plus Electron (MIT) and three.js (MIT). It also lists the kinematics references.
 
-The same information is in the app under **Menu → About BeanyIK**.
+The same information is in the app under **Menu**, **About BeanyIK**.

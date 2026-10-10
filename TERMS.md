@@ -1,4 +1,4 @@
-# BeanyIK — Terms of Use & Privacy
+# BeanyIK Terms of Use & Privacy
 
 _Last updated: 10 October 2026_
 
@@ -63,7 +63,7 @@ OR PERSONS, ARISING FROM THE USE OF THE APP OR OF RESULTS PRODUCED WITH IT.
 ## 6. Unsigned builds
 
 Windows builds are not code-signed, so Windows SmartScreen may warn on first
-launch ("Windows protected your PC" → *More info* → *Run anyway*). Only download
+launch ("Windows protected your PC"). Click *More info*, then *Run anyway*. Only download
 BeanyIK from the official GitHub releases page linked above.
 
 ## 7. Changes

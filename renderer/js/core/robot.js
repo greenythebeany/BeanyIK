@@ -1,11 +1,6 @@
-// Robot model: a serial chain of joints/links described either by DH
-// parameters (standard or modified convention) or by a custom 4x4 matrix of
-// expressions. Everything here is pure (no DOM) so it can be unit-tested.
-//
-// Units: lengths in metres. In the editor, DH angle fields (theta, alpha),
-// joint limits/home of revolute joints and base/tool RPY are in DEGREES.
-// Internally — and inside custom-matrix expressions — joint variable `q` is in
-// RADIANS (revolute) or metres (prismatic).
+// robot model + FK. no DOM in here so npm test can run it.
+// lengths in metres. angles in the editor are degrees, but q is radians
+// internally and inside custom matrices.
 
 import * as M from './mat.js';
 import { compile, tryEvaluate } from './expr.js';
@@ -22,8 +17,9 @@ export function makeJoint(type = 'revolute', overrides = {}) {
     name: '',
     type,
     mode: 'dh',
-    // non-zero defaults so a freshly dropped part is visible
-    dh: { theta: '0', d: '0', a: isPrism ? '0' : type === 'fixed' ? '0.1' : '0.2', alpha: isPrism ? '0' : '0' },
+    // so a new part isn't invisible
+    // fixed links start upright (along z), revolute ones stick out along x
+    dh: { theta: '0', d: type === 'fixed' ? '0.15' : '0', a: isPrism || type === 'fixed' ? '0' : '0.2', alpha: '0' },
     matrix: [
       ['cos(q)', '-sin(q)', '0', '0'],
       ['sin(q)', 'cos(q)', '0', '0'],
@@ -54,7 +50,6 @@ export function makeRobot(overrides = {}) {
 
 export const isActive = (j) => j.type !== 'fixed';
 
-// Revolute joints show degrees in the UI; prismatic show metres.
 export function toDisplay(joint, q) {
   return joint.type === 'revolute' ? q / M.DEG : q;
 }
@@ -62,9 +57,8 @@ export function fromDisplay(joint, v) {
   return joint.type === 'revolute' ? v * M.DEG : v;
 }
 
-// ---- compilation -------------------------------------------------------
-
-// Resolve parameters in order so later ones may reference earlier ones.
+// compilation
+// later params can use earlier ones
 export function resolveParams(robot) {
   const scope = {};
   const errors = {};
@@ -87,8 +81,7 @@ function poseFrom(spec, scope, errors, prefix) {
   return M.fromXYZRPY(v.x, v.y, v.z, v.roll * M.DEG, v.pitch * M.DEG, v.yaw * M.DEG);
 }
 
-// Compile a robot into a fast evaluator. Field errors are reported (keyed
-// "jointId.field") instead of thrown so the UI can highlight them.
+// errors go into prep.errors["jointId.field"] so the UI can mark the field
 export function prepare(robot) {
   const { scope, errors: paramErrors } = resolveParams(robot);
   const errors = {};
@@ -132,7 +125,7 @@ export function prepare(robot) {
         for (let r = 0; r < 3; r++) for (let c = 0; c < 4; c++) T[r][c] = cells[r][c](local);
         return T;
       };
-      // sanity check of the rotation part at home pose
+      // check the rotation part is actually a rotation
       try {
         const T = link.transform(link.home);
         const R = M.rotation(T);
@@ -163,9 +156,7 @@ export function prepare(robot) {
 
   const activeLinks = links.filter((l) => l.active);
 
-  // Pose-independent size of the robot (sum of link offsets + prismatic
-  // stroke + tool). Used to size the 3D drawing so it doesn't "breathe" as
-  // the arm moves.
+  // rough robot size for drawing, doesn't change with the pose
   let size = M.norm(M.position(tool));
   for (const link of links) {
     try {
@@ -191,10 +182,8 @@ export function prepare(robot) {
   };
 }
 
-// ---- forward kinematics -----------------------------------------------
-
-// Returns frames[0] = base, frames[i] = frame after link i, and `ee` = tool
-// frame. Also returns per-link A matrices.
+// forward kinematics
+// frames[0] is the base, frames[i] the frame after link i, ee is the tool
 export function fk(prep, q) {
   const frames = [prep.base];
   const A = [];
@@ -219,8 +208,7 @@ export function endEffector(prep, q) {
   return M.mul(T, prep.tool);
 }
 
-// Numerical geometric Jacobian (6 x dof, linear rows first, base frame).
-// Works for DH and custom-matrix joints alike.
+// numerical jacobian, 6 x dof, linear rows first. works for matrix joints too
 export function jacobian(prep, q, T0 = endEffector(prep, q)) {
   const n = prep.dof;
   const J = M.zeros(6, n);
@@ -242,7 +230,7 @@ export function jacobian(prep, q, T0 = endEffector(prep, q)) {
   return J;
 }
 
-// Yoshikawa manipulability sqrt(det(J J^T)) over the rows that matter.
+// yoshikawa manipulability
 export function manipulability(J, rows = 6) {
   const Jr = J.slice(0, rows);
   const sv = M.singularValues(Jr);
@@ -254,8 +242,7 @@ export function manipulability(J, rows = 6) {
   return { w, sv: top, cond };
 }
 
-// Where (and about which axis) each joint moves, for drawing. For DH joints
-// we know the geometry exactly; for custom matrices we estimate it.
+// joint positions/axes for drawing. matrix joints get probed numerically
 export function jointGeometry(prep, q, fkResult = fk(prep, q)) {
   const { frames } = fkResult;
   const out = [];
@@ -277,7 +264,7 @@ export function jointGeometry(prep, q, fkResult = fk(prep, q)) {
       const mid = oPrev.map((v, c) => v + xPrev[c] * link.dh.a);
       path = [oPrev, mid, oNext];
     } else {
-      // custom matrix: probe the motion of the child frame
+      // custom matrix, see how the next frame moves
       at = oPrev; path = [oPrev, oNext]; axis = zPrev;
       if (link.active) {
         const qi = q[k] ?? 0, h = 1e-4;
@@ -299,7 +286,7 @@ export function jointGeometry(prep, q, fkResult = fk(prep, q)) {
   return out;
 }
 
-// Random joint samples -> end-effector positions (workspace cloud).
+// random configs for the workspace cloud
 export function sampleWorkspace(prep, count = 4000) {
   const pts = new Float32Array(count * 3);
   const lim = prep.limits.map(([a, b]) => [Number.isFinite(a) ? a : -Math.PI, Number.isFinite(b) ? b : Math.PI]);

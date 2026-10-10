@@ -1,11 +1,9 @@
-/* BeanyIK — layout and look modelled on Adobe Acrobat's current UI:
-   white app bar with tabs, "All tools" panel on the left, floating quick-tools
-   rail beside a grey canvas, icon rail on the right that opens panels. */
+/* BeanyIK, layout loosely based on Acrobat */
 
 :root {
   --font: 'Adobe Clean', 'Segoe UI Variable Text', 'Segoe UI', system-ui, -apple-system, sans-serif;
   --mono: 'Cascadia Code', 'Consolas', 'SFMono-Regular', monospace;
-  /* math typesetting: Cambria Math ships with Windows; fall back to other OpenType math fonts */
+  /* Cambria Math comes with Windows */
   --math: 'Cambria Math', 'STIX Two Math', 'Latin Modern Math', 'Cambria', 'Times New Roman', serif;
   --brand-ink: #10141b;
   --brand-lime: #a3e635;
@@ -105,7 +103,7 @@ input, select, textarea { font: inherit; color: var(--text); }
 ::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 10px; border: 3px solid transparent; background-clip: padding-box; }
 ::-webkit-scrollbar-track { background: transparent; }
 
-/* ---------------- app bar ---------------- */
+/* app bar */
 .appbar {
   height: var(--appbar-h); display: flex; align-items: center; justify-content: space-between;
   background: var(--bg-appbar); border-bottom: 1px solid var(--border);
@@ -178,7 +176,7 @@ img.app-logo { width: 30px; height: 30px; padding: 0; background: none; box-shad
 .win-btn:hover { background: var(--bg-hover); }
 .win-close:hover { background: #e81123; color: #fff; }
 
-/* ---------------- buttons & inputs ---------------- */
+/* buttons & inputs */
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 6px;
   height: 32px; padding: 0 14px; border-radius: 16px; cursor: pointer; font-weight: 700;
@@ -235,7 +233,7 @@ select.input { padding-right: 6px; }
 .badge.info { background: var(--accent-soft); color: var(--accent); }
 .badge .ico { width: 14px; height: 14px; }
 
-/* ---------------- home ---------------- */
+/* home */
 .home { height: calc(100% - var(--appbar-h)); overflow: auto; padding: 36px 48px 48px; }
 .home-inner { max-width: 1180px; margin: 0 auto; }
 .home h1 { font-size: 26px; font-weight: 800; margin: 0 0 4px; letter-spacing: -0.2px; }
@@ -279,7 +277,7 @@ select.input { padding-right: 6px; }
 .tile.blue { background: var(--t-blue); } .tile.green { background: var(--t-green); } .tile.teal { background: var(--t-teal); }
 .tile.magenta { background: var(--t-magenta); } .tile.indigo { background: var(--t-indigo); } .tile.gray { background: #8a8a8a; }
 
-/* ---------------- workspace ---------------- */
+/* workspace */
 .workspace { display: flex; height: calc(100% - var(--appbar-h)); }
 
 .tools-panel {
@@ -374,7 +372,7 @@ select.input { padding-right: 6px; }
 .rail-btn.on::before { content: ''; position: absolute; right: -6px; top: 8px; bottom: 8px; width: 3px; border-radius: 2px; background: var(--accent); }
 .rail-btn .count { position: absolute; top: 3px; right: 3px; min-width: 15px; height: 15px; padding: 0 4px; border-radius: 8px; background: var(--err); color: #fff; font-size: 10px; font-weight: 800; display: flex; align-items: center; justify-content: center; }
 
-/* ---------------- panels content ---------------- */
+/* panels content */
 .section { margin: 14px 0 18px; }
 .section-title { font-size: 12px; font-weight: 800; color: var(--text-2); text-transform: none; margin: 0 0 10px; display: flex; align-items: center; gap: 8px; }
 .section-title .grow { flex: 1; }
@@ -504,7 +502,7 @@ input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 16px;
   .side-panel { width: 320px; }
 }
 
-/* ---------------- academic notation ---------------- */
+/* academic notation */
 .mi { font-family: var(--math); font-style: italic; }
 sub, sup { font-size: 0.72em; line-height: 0; }
 .eq { font-family: var(--math); font-size: 15px; color: var(--text); white-space: nowrap; }

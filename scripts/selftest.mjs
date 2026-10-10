@@ -1,5 +1,4 @@
-// Headless checks for the kinematics core: expression parser, FK sanity,
-// numerical IK convergence, and every preset's analytic IK verified by FK.
+// quick sanity checks for the math (npm test)
 import { evaluate } from '../renderer/js/core/expr.js';
 import { prepare, fk, jacobian, manipulability } from '../renderer/js/core/robot.js';
 import { solveIK, solveAnalytic } from '../renderer/js/core/ik.js';
@@ -33,7 +32,7 @@ for (const preset of PRESETS) {
     if (nr.ok) numericOk++;
   }
   check(analyticOk === analyticTotal, `analytic IK reaches ${analyticOk}/${analyticTotal} random poses`);
-  // random targets from a fixed seed pose: allow the odd miss, the app retries from the current pose
+  // starts from home every time so the odd miss is fine
   check(numericOk >= 22, `numerical IK converges ${numericOk}/25`);
   const J = jacobian(prep, prep.home);
   check(J.length === 6 && J[0].length === prep.dof, `jacobian 6x${prep.dof}, w=${manipulability(J).w.toExponential(2)}`);

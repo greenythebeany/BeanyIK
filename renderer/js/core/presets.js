@@ -1,12 +1,11 @@
-// Starter robots. Each comes with a closed-form IK example so the analytic
-// panel has something real to show (and something to compare against).
+// templates, each one has a working closed form IK
 
 import { makeRobot, makeJoint } from './robot.js';
 
 const J = (type, name, dh, extra = {}) => makeJoint(type, { name, dh: { theta: '0', d: '0', a: '0', alpha: '0', ...dh }, ...extra });
 
 const ARM6_IK = `// Anthropomorphic arm + spherical wrist (standard DH).
-// Wrist centre -> q1..q3 (2 x 2 branches), wrist orientation -> q4..q6 (x2).
+// wrist centre gives q1..q3, wrist orientation gives q4..q6. 8 branches total
 const { d1, a2, d4, d6 } = P;
 const R = h.rotation(T);
 const ax = R[0][2], ay = R[1][2], az = R[2][2];

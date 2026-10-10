@@ -14,11 +14,10 @@ import { t, getLang, setLang, translateStatic } from './i18n.js';
 const $ = (sel, root = document) => root.querySelector(sel);
 const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const fmt = (v, d = 3) => (Number.isFinite(v) ? (Math.abs(v) < 0.5 * 10 ** -d ? 0 : v).toFixed(d) : '—');
-// Textbook-style notation: italic symbol with subscript, e.g. sym('θ', 2) -> θ₂
+const fmt = (v, d = 3) => (Number.isFinite(v) ? (Math.abs(v) < 0.5 * 10 ** -d ? 0 : v).toFixed(d) : 'n/a');
+// sym('θ', 2) gives θ₂ in the math font
 const sym = (s, sub) => `<span class="mi">${s}</span>${sub !== undefined && sub !== '' ? `<sub>${sub}</sub>` : ''}`;
-// Typeset a field expression: identifiers italic with numeric subscripts
-// (L1 -> L₁), numbers upright, '*' as '·', '-' as a real minus.
+// pretty print a field like the textbook does, L1*2 becomes L₁·2
 const MATH_FUNCS = new Set(['sin', 'cos', 'tan', 'asin', 'acos', 'atan', 'atan2', 'sqrt', 'abs', 'exp', 'log', 'ln', 'min', 'max', 'deg', 'rad', 'sind', 'cosd', 'hypot', 'sign']);
 const mathExpr = (src) => esc(String(src ?? '').trim()).replace(/[A-Za-z_]+\d*|-|\*/g, (m) => {
   if (m === '-') return '−';
@@ -35,8 +34,7 @@ const store = {
   set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch { /* ignore */ } },
 };
 
-// ---------------------------------------------------------------- state
-
+// state
 const state = {
   view: 'home',
   robot: null,
@@ -57,8 +55,7 @@ const state = {
   camera: null,
 };
 
-// Open robots (tabs). The active document's fields live directly on `state`;
-// the others are stashed in their `docs` entry until they're activated.
+// open tabs. the active one lives in `state`, the rest are parked in `docs`
 const DOC_KEYS = ['robot', 'prep', 'qById', 'selected', 'filePath', 'dirty', 'ik', 'matrixView', 'showWorkspace', 'history', 'camera'];
 const docs = [];
 let activeDoc = -1;
@@ -85,8 +82,7 @@ function partToJoint(kind) {
   return makeJoint(kind);
 }
 
-// ------------------------------------------------------------ helpers
-
+// helpers
 function activeJoints() {
   return state.robot.joints.filter(isActive);
 }
@@ -127,8 +123,7 @@ function toast(msg, kind = '') {
   setTimeout(() => el.remove(), 2600);
 }
 
-// ----------------------------------------------------- history / dirty
-
+// history / dirty
 function snapshot() {
   return JSON.stringify({ robot: state.robot, qById: state.qById });
 }
@@ -192,8 +187,7 @@ function autosave() {
   autosaveTimer = setTimeout(saveSessionNow, 400);
 }
 
-// ------------------------------------------------------- open document
-
+// open document
 function docField(i, key) {
   return i === activeDoc ? state[key] : docs[i][key];
 }
@@ -209,7 +203,6 @@ function loadDoc(i) {
   activeDoc = i;
 }
 
-// Bring document i to the front (stashing the current one).
 function switchToDoc(i, { stash = true } = {}) {
   if (i < 0 || i >= docs.length) return;
   if (i !== activeDoc) {
@@ -260,8 +253,7 @@ function openRobot(robot, { filePath = null, qById = null, dirty = false } = {})
   autosave();
 }
 
-// In-app confirmation dialog (native confirm() looks foreign and can leave
-// Electron's text inputs unfocusable afterwards). Resolves true/false.
+// own confirm box, the native one breaks input focus in electron
 function confirmDialog(message, { okLabel = t('Close tab'), cancelLabel = t('Cancel'), danger = true } = {}) {
   return new Promise((resolve) => {
     const el = $('#confirm');
@@ -322,7 +314,7 @@ async function closeDoc(i = activeDoc) {
   }
 }
 
-// Tab order: Home, then documents. Ctrl+1 = Home, Ctrl+2.. = documents.
+// Ctrl+1 is home, Ctrl+2 the first robot and so on
 function goToTab(n) {
   if (n <= 0) return showView('home');
   if (docs.length) switchToDoc(Math.min(n, docs.length) - 1);
@@ -346,7 +338,7 @@ function renderTabs() {
   }).join('');
   host.innerHTML = `<button class="tab ${state.view === 'home' ? 'active' : ''}" data-home-tab title="${t('Home')} (Ctrl+1)">${icon('home')}<span>${t('Home')}</span></button>${tabs}
     <button class="tab-new" data-new-tab title="${t('New tab')} (Ctrl+T)">${icon('plus')}</button>`;
-  document.title = state.robot ? `${state.robot.name} — BeanyIK` : 'BeanyIK';
+  document.title = state.robot ? `${state.robot.name} | BeanyIK` : 'BeanyIK';
 }
 
 function showView(view) {
@@ -365,8 +357,7 @@ function restoreSession() {
   if (list.length) switchToDoc(Math.max(0, Math.min(s.active ?? 0, docs.length - 1)));
 }
 
-// ------------------------------------------------------------- refresh
-
+// refresh
 function refresh({ panel = false, scene = true } = {}) {
   state.prep = prepare(state.robot);
   renderTabs();
@@ -417,8 +408,7 @@ function renderHud() {
   $('#fig-caption').innerHTML = `<b>${t('Fig.')} ${activeDoc + 1}</b> ${esc(state.robot.name)} · ${state.prep.dof} DOF · ${conv}`;
 }
 
-// ------------------------------------------------------------ editing
-
+// editing
 function getJoint(id) {
   return state.robot.joints.find((j) => j.id === id);
 }
@@ -491,7 +481,7 @@ function select(id) {
   else if (state.panel === 'props') renderPanel();
 }
 
-// Generic data-bind: "robot.name", "joint:<id>.dh.theta", "param:<i>.value", "base.x"
+// data-bind paths look like robot.name, joint:<id>.dh.theta, param:<i>.value, base.x
 function bindTarget(path) {
   const [head, ...rest] = path.split('.');
   let obj;
@@ -526,8 +516,7 @@ function updateFieldErrors() {
   });
 }
 
-// ------------------------------------------------------------- panels
-
+// panels
 function openPanel(id) {
   state.panel = id;
   state.panelOpen = true;
@@ -561,13 +550,12 @@ function renderPanel() {
   if (state.panel === 'ik') renderIKStatus();
 }
 
-// Joint variable index (q₁, q₂, …) of joint j, or null for fixed links.
+// which q this joint drives (1 based), null for fixed links
 function qIndexOf(j) {
   if (!isActive(j)) return null;
   return state.robot.joints.filter(isActive).indexOf(j) + 1;
 }
 
-// One DH row as math cells: { theta, d, a, alpha } (HTML).
 function dhCells(j) {
   const k = qIndexOf(j);
   const zero = (v) => /^\s*-?0*(\.0*)?\s*$/.test(String(v ?? '0'));
@@ -588,7 +576,7 @@ function dhSummary(j) {
   return `${sym('θ', i)} = ${c.theta}, ${sym('d', i)} = ${c.d}, ${sym('a', i)} = ${c.a}, ${sym('α', i)} = ${c.alpha}`;
 }
 
-// Textbook DH table (booktabs style).
+// DH table for the chain panel
 function dhTableHTML() {
   const r = state.robot;
   if (!r.joints.length) return '';
@@ -604,7 +592,7 @@ function dhTableHTML() {
   const head = mod
     ? `<th>${sym('i')}</th><th>${sym('α', sa)}</th><th>${sym('a', sa)}</th><th>${sym('θ', 'i')}</th><th>${sym('d', 'i')}</th>`
     : `<th>${sym('i')}</th><th>${sym('θ', 'i')}</th><th>${sym('d', 'i')}</th><th>${sym('a', 'i')}</th><th>${sym('α', 'i')}</th>`;
-  return `<table class="dh-table"><caption>${t('Table')} 1 — ${t(mod ? 'Modified DH' : 'Standard DH')} ${t('parameters')}</caption><thead><tr>${head}</tr></thead><tbody>${rows}</tbody></table>`;
+  return `<table class="dh-table"><caption>${t('Table')} 1. ${t(mod ? 'Modified DH' : 'Standard DH')} ${t('parameters')}</caption><thead><tr>${head}</tr></thead><tbody>${rows}</tbody></table>`;
 }
 
 function tileFor(j) {
@@ -673,7 +661,7 @@ function poseFields(key) {
 function renderProps() {
   const sel = state.selected;
   if (!sel) {
-    return `<div class="notice info">${icon('info')}<div>${t('Select a link in the chain or in the 3D view to edit it. Fields accept expressions — numbers, your parameters (<code>L1</code>), <code>pi</code>, <code>sqrt()</code>, <code>atan2()</code>…')}</div></div>`;
+    return `<div class="notice info">${icon('info')}<div>${t('Select a link in the chain or in the 3D view to edit it. Fields accept expressions: numbers, your parameters (<code>L1</code>), <code>pi</code>, <code>sqrt()</code>, <code>atan2()</code>…')}</div></div>`;
   }
   if (sel === 'base' || sel === 'tool') {
     return `
@@ -728,7 +716,15 @@ function renderProps() {
           ${dhField('a', modified ? 'a (i−1)' : 'a', 'm')}
           ${dhField('alpha', modified ? 'α (i−1)' : 'α', angUnit)}
         </div>
-        <p class="hint">${t(j.type === 'revolute' ? 'θ = q + offset.' : j.type === 'prismatic' ? 'd = q + offset.' : 'No joint variable.')} ${t('Angles in degrees; expressions allowed.')}</p>`
+        <p class="hint">${t(j.type === 'revolute' ? 'θ = q + offset.' : j.type === 'prismatic' ? 'd = q + offset.' : 'No joint variable.')} ${t('Angles in degrees; expressions allowed.')}</p>
+        ${j.type === 'fixed' ? `
+        <div class="section-title" style="margin-top:14px">${t('Point the link')}</div>
+        <div class="row" style="gap:6px">
+          <button class="btn btn-sm" data-act="link-dir" data-dir="up" data-id="${j.id}">↑ ${t('Up (+Z)')}</button>
+          <button class="btn btn-sm" data-act="link-dir" data-dir="x" data-id="${j.id}">${t('Forward (+X)')}</button>
+          <button class="btn btn-sm" data-act="link-dir" data-dir="down" data-id="${j.id}">↓ ${t('Down (−Z)')}</button>
+        </div>
+        <p class="hint">${t("Directions are relative to the previous frame. A fixed link has no joint, so the IK target can't move it; change d (along z) or a (along x) instead.")}</p>` : ''}`
       : matrixEditor()}
     </div>
     ${isActive(j) ? `
@@ -804,7 +800,7 @@ function renderIK() {
       <div class="section-title">${t('Target pose')} <span class="grow"></span><button class="btn btn-sm btn-quiet" data-act="tgt-ee">${icon('target')}${t('Use current')}</button></div>
       <div class="grid3">${num('x', tg[0][3], 'm')}${num('y', tg[1][3], 'm')}${num('z', tg[2][3], 'm')}</div>
       <div class="grid3" style="margin-top:10px">${num('roll', roll / M.DEG, 'deg')}${num('pitch', pitch / M.DEG, 'deg')}${num('yaw', yaw / M.DEG, 'deg')}</div>
-      <p class="hint">${t('Or drag the green target in the 3D view — <b>Ctrl+M</b> move, <b>Ctrl+R</b> rotate.')}</p>
+      <p class="hint">${t('Or drag the green target in the 3D view (<b>Ctrl+M</b> move, <b>Ctrl+R</b> rotate).')}</p>
     </div>
     <div class="section">
       <label class="switch"><input type="checkbox" data-act="ik-live" ${state.ik.live ? 'checked' : ''}><span class="track"></span>${t('Follow target live (numerical)')}</label>
@@ -825,7 +821,7 @@ function renderIKStatus() {
   const r = state.ik.result;
   if (r) {
     const cls = r.ok ? 'ok' : 'warn';
-    el.innerHTML = `<div class="notice ${cls}">${icon(r.ok ? 'check' : 'warn')}<div><b>${t(r.ok ? 'Converged' : 'Best effort — target not reached')}</b><br>
+    el.innerHTML = `<div class="notice ${cls}">${icon(r.ok ? 'check' : 'warn')}<div><b>${t(r.ok ? 'Converged' : 'Target not reached (best effort)')}</b><br>
       ${t('position error {p} mm · orientation error {o}° · {n} iterations', { p: (r.posErr * 1000).toFixed(3), o: (r.rotErr / M.DEG).toFixed(3), n: r.iterations })}${r.restartsUsed ? t(' · restarts used') : ''}</div></div>`;
   } else el.innerHTML = '';
   const sl = $('#ik-solutions');
@@ -846,8 +842,8 @@ function renderIKStatus() {
 
 function renderMatrices() {
   if (state.matrixView.startsWith('A') && +state.matrixView.slice(1) >= state.robot.joints.length) state.matrixView = 'total';
-  const opts = [['total', t('⁰T_ee — base to end effector')], ['jacobian', t('Jacobian J(q) (6 × n)')]];
-  state.robot.joints.forEach((j, i) => opts.push([`A${i}`, `A${i + 1} — ${jointLabel(j, i)}`]));
+  const opts = [['total', t('⁰T_ee: base to end effector')], ['jacobian', t('Jacobian J(q) (6 × n)')]];
+  state.robot.joints.forEach((j, i) => opts.push([`A${i}`, `A${i + 1}: ${jointLabel(j, i)}`]));
   opts.push(['all', t('All link matrices')]);
   return `
     <div class="field"><label>${t('Show')}</label>
@@ -901,7 +897,7 @@ function renderMatricesBody() {
           <div class="stat"><div class="stat-k">σ min</div><div class="stat-v">${(m.sv.at(-1) ?? 0).toExponential(2)}</div></div>
           <div class="stat"><div class="stat-k">${Jsq !== null ? 'det J' : 'cond'}</div><div class="stat-v">${Jsq !== null ? Jsq.toExponential(2) : Number.isFinite(m.cond) ? m.cond.toFixed(1) : '∞'}</div></div>
         </div>
-        ${m.sv.at(-1) < 1e-3 ? `<div class="notice warn" style="margin-top:10px">${icon('warn')}<div>${t('The arm is at (or very near) a singularity — it loses a direction of motion here.')}</div></div>` : ''}
+        ${m.sv.at(-1) < 1e-3 ? `<div class="notice warn" style="margin-top:10px">${icon('warn')}<div>${t('The arm is at (or very near) a singularity, so it loses a direction of motion here.')}</div></div>` : ''}
         <p class="hint">${rows === 6 ? '' : t('Fewer than 6 DOF: manipulability uses the 3 linear rows. ')}${t('Computed numerically, so it works for custom-matrix joints too.')}</p>`;
     }
   } else {
@@ -923,7 +919,7 @@ function renderParams() {
       <button class="icon-btn small danger" data-act="param-del" data-i="${i}" title="${t('Remove')}">${icon('trash')}</button>
     </div>`).join('');
   return `
-    <p class="hint" style="margin-top:0">${t('Named constants used anywhere in the robot — link lengths, offsets… Later parameters can use earlier ones (e.g. <code>L3 = L1 + L2</code>).')}</p>
+    <p class="hint" style="margin-top:0">${t('Named constants you can use anywhere in the robot, like link lengths or offsets. Later parameters can use earlier ones (e.g. <code>L3 = L1 + L2</code>).')}</p>
     ${rows || `<div class="empty-note">${t('No parameters yet.')}</div>`}
     <button class="btn btn-sm" data-act="param-add" style="margin-top:6px">${icon('plus')}${t('Add parameter')}</button>
     <div class="divider"></div>
@@ -944,15 +940,13 @@ function renderCode() {
     <div id="code-result" style="margin-top:12px"></div>`;
 }
 
-// ---------------------------------------------------------- IK actions
-
+// IK actions
 function resetTargetToEE() {
   state.ik.target = M.clone(lastFK.ee);
   viewport.setTarget(state.ik.target);
 }
 
-// Any pose change that didn't come from the IK solver moves the target back
-// onto the end effector, so the gizmo never floats where the arm used to be.
+// put the IK target back on the tool after a manual pose change
 function snapTargetToEE() {
   if (!lastFK || viewport.tcontrols.dragging) return;
   state.ik.target = M.clone(lastFK.ee);
@@ -968,7 +962,6 @@ function snapTargetToEE() {
   }
 }
 
-// Manual (non-IK) joint motion: redraw and bring the target along.
 function poseChanged() {
   updateScene();
   snapTargetToEE();
@@ -984,7 +977,7 @@ function scheduleWorkspace() {
 }
 
 function syncTargetGizmo() {
-  const visible = state.tool !== 'select' || (state.panelOpen && state.panel === 'ik');
+  const visible = state.prep?.dof > 0 && (state.tool !== 'select' || (state.panelOpen && state.panel === 'ik'));
   if (!state.ik.target) resetTargetToEE();
   viewport.setTarget(state.ik.target);
   viewport.setTargetVisible(visible, state.tool === 'rotate' ? 'rotate' : 'translate');
@@ -1036,8 +1029,7 @@ function onTargetDrag(T) {
   });
 }
 
-// ------------------------------------------------------------- left panel
-
+// left panel
 function renderTools() {
   const analyze = [
     ['ik', 'Inverse kinematics', 'Drag a target, solve q', 'green', 'ik'],
@@ -1049,7 +1041,7 @@ function renderTools() {
   $('#tools-panel').innerHTML = `
     <h2>${t('All tools')}</h2>
     <div class="tool-section">
-      <div class="tool-section-title">${t('Build — drag into the chain')}</div>
+      <div class="tool-section-title">${t('Build: drag into the chain')}</div>
       ${PART_TYPES.map((p) => `
         <div class="tool-item draggable" draggable="true" data-part="${p.kind}" title="${t('Drag into the chain or click to append')}">
           <span class="tile ${p.tile}">${glyph(p.glyph)}</span>
@@ -1099,8 +1091,7 @@ function renderViewPill() {
     <button class="qbtn" data-cam="fit" title="${t('Fit robot')}">${icon('fit')}</button>`;
 }
 
-// ------------------------------------------------------------------ home
-
+// home
 function renderHome() {
   const recent = store.get('beanyik_recent', []);
   const session = store.get('beanyik_session', null);
@@ -1138,7 +1129,7 @@ function renderHome() {
           </div>`).join('')}
         <div class="card" data-home="new">
           <span class="tile gray">${glyph('blank')}</span>
-          <div><div class="card-title">${t('Blank robot')}</div><div class="card-sub">${t('Empty chain — drag parts in yourself')}</div></div>
+          <div><div class="card-title">${t('Blank robot')}</div><div class="card-sub">${t('Empty chain, drag parts in yourself')}</div></div>
           <div class="card-meta">${t('Standard DH')}</div>
         </div>
       </div>
@@ -1162,8 +1153,7 @@ function addRecent(filePath, name) {
   store.set('beanyik_recent', recent.slice(0, 12));
 }
 
-// ------------------------------------------------------------------- files
-
+// files
 function serialize() {
   const q = {};
   state.prep.activeLinks.forEach((l) => { q[l.joint.id] = state.qById[l.joint.id]; });
@@ -1213,8 +1203,7 @@ function loadPreset(id) {
   openRobot(p.build());
 }
 
-// -------------------------------------------------------------------- menu
-
+// menu
 function toggleMenu(show) {
   const m = $('#menu');
   if (show === undefined) show = m.hidden;
@@ -1260,9 +1249,8 @@ function toggleTheme() {
   viewport.applyTheme();
 }
 
-// -------------------------------------------------------------- dnd
-
-let dragPayload = null; // { kind } from palette | { move: id } from chain
+// dnd
+let dragPayload = null; // { kind } when dragging a part, { move: id } when reordering
 
 function clearDropMarks() {
   $$('.drop-on').forEach((el) => el.classList.remove('drop-on'));
@@ -1288,7 +1276,7 @@ function wireDnD() {
   const gapFrom = (e) => {
     const gap = e.target.closest?.('[data-gap]');
     if (gap) return gap;
-    // nearest gap to the pointer when hovering over a node
+    // hovering a node, use the gap above or below it
     const node = e.target.closest?.('[data-node]');
     if (!node || !$('#chain')?.contains(node)) return null;
     const r = node.getBoundingClientRect();
@@ -1327,8 +1315,7 @@ function wireDnD() {
   });
 }
 
-// ----------------------------------------------------------- events
-
+// events
 function wireEvents() {
   $('#btn-min').onclick = () => window.api.minimize();
   $('#btn-max').onclick = () => window.api.maximize();
@@ -1347,7 +1334,7 @@ function wireEvents() {
     const tab = e.target.closest('[data-doc]');
     if (tab) switchToDoc(+tab.dataset.doc);
   });
-  // middle-click closes a tab, like in a browser
+  // middle click closes a tab
   $('#tabs').addEventListener('auxclick', (e) => {
     const tab = e.target.closest('[data-doc]');
     if (tab && e.button === 1) closeDoc(+tab.dataset.doc);
@@ -1531,8 +1518,8 @@ function wireEvents() {
   });
 
   document.addEventListener('keydown', (e) => {
-    if ($('#about').dataset.locked === '1') return; // terms must be accepted first
-    // only text entry owns the keyboard; sliders, checkboxes and dropdowns don't
+    if ($('#about').dataset.locked === '1') return; // terms popup still open
+    // let text fields keep their own shortcuts
     const typing = !!e.target.matches?.('textarea, input:not([type=range]):not([type=checkbox]):not([type=radio])');
     const ctrl = e.ctrlKey || e.metaKey;
     if (ctrl && e.key.toLowerCase() === 's') { e.preventDefault(); if (state.view === 'doc') save(e.shiftKey); return; }
@@ -1543,7 +1530,7 @@ function wireEvents() {
     if (ctrl && /^Digit[1-9]$/.test(e.code)) {
       e.preventDefault();
       const n = Number(e.code.slice(5));
-      goToTab(n === 9 ? docs.length : n - 1); // Ctrl+9 = last tab, like browsers
+      goToTab(n === 9 ? docs.length : n - 1); // Ctrl+9 = last tab
       return;
     }
     if (e.key === 'F1' || (ctrl && e.key === '/')) { e.preventDefault(); toggleShortcuts(); return; }
@@ -1588,8 +1575,7 @@ function wireEvents() {
   });
 }
 
-// ---------------------------------------------------------- about / terms
-
+// about / terms
 const REPO_URL = 'https://github.com/greenythebeany/BeanyIK';
 const TERMS_VERSION = 1;
 let appVersion = '';
@@ -1603,7 +1589,7 @@ function termsSummaryHTML() {
   return `
     <ul>
       <li>${t('BeanyIK is free, open-source software under the MIT License.')}</li>
-      <li>${t('It is an educational and design tool. Results are numerical approximations — never use it as the only basis for moving real hardware.')}</li>
+      <li>${t('It is an educational and design tool. Results are numerical approximations, so never use it as the only basis for moving real hardware.')}</li>
       <li>${t('The analytic IK panel runs JavaScript you type, locally. Only run code you trust, including code inside robot files from others.')}</li>
       <li>${t('No accounts, analytics or telemetry. Your robots and settings stay on your computer. The app only contacts GitHub to check for updates.')}</li>
       <li>${t('Provided “as is”, without warranty of any kind.')}</li>
@@ -1617,7 +1603,7 @@ function showAbout(tab = 'about') {
     about: `
       <div class="about-hero"><img src="logo.png" alt=""><div>
         <h2>BeanyIK</h2>
-        <p>${t('Version')} ${esc(appVersion || '—')} · ${t('by')} GreenyBeany</p>
+        <p>${t('Version')} ${esc(appVersion || '?')} · ${t('by')} GreenyBeany</p>
         <p>${t('Drag & drop robot kinematics: DH parameters or custom matrices, forward and inverse kinematics, Jacobians and workspaces.')}</p>
       </div></div>
       <div class="row" style="justify-content:flex-start;gap:8px">
@@ -1633,25 +1619,25 @@ function showAbout(tab = 'about') {
         <p>${t('Concept and art direction by GreenyBeany; image generated with Google Gemini, then cropped and exported to icon sizes.')}</p>
         <h3>${t('Fonts')}</h3>
         <ul>
-          <li><b>Segoe UI</b> — ${t('interface text')} (Microsoft, ${t('included with Windows')})</li>
-          <li><b>Cambria Math</b> — ${t('mathematical notation')} (Microsoft, ${t('included with Windows')})</li>
-          <li><b>Cascadia Code</b> — ${t('code and numbers')} (Microsoft, SIL Open Font License 1.1)</li>
+          <li><b>Segoe UI</b>: ${t('interface text')} (Microsoft, ${t('included with Windows')})</li>
+          <li><b>Cambria Math</b>: ${t('mathematical notation')} (Microsoft, ${t('included with Windows')})</li>
+          <li><b>Cascadia Code</b>: ${t('code and numbers')} (Microsoft, SIL Open Font License 1.1)</li>
         </ul>
         <p class="hint">${t('No font files are bundled; the app uses fonts already installed on your system.')}</p>
         <h3>${t('Software')}</h3>
         <ul>
-          <li><a data-ext="https://www.electronjs.org/">Electron</a> — MIT (${t('includes Chromium and Node.js')})</li>
-          <li><a data-ext="https://threejs.org/">three.js</a> r170 — MIT (OrbitControls, TransformControls)</li>
+          <li><a data-ext="https://www.electronjs.org/">Electron</a>, MIT (${t('includes Chromium and Node.js')})</li>
+          <li><a data-ext="https://threejs.org/">three.js</a> r170, MIT (OrbitControls, TransformControls)</li>
         </ul>
         <h3>${t('Design')}</h3>
         <p>${t('Layout inspired by Adobe Acrobat. Not affiliated with or endorsed by Adobe. UI icons drawn for BeanyIK.')}</p>
         <h3>${t('References')}</h3>
         <ul>
-          <li>Denavit &amp; Hartenberg (1955) — ${t('standard DH convention')}</li>
-          <li>Craig, <i>Introduction to Robotics</i> — ${t('modified DH convention')}</li>
+          <li>Denavit &amp; Hartenberg (1955), ${t('standard DH convention')}</li>
+          <li>Craig, <i>Introduction to Robotics</i>, ${t('modified DH convention')}</li>
           <li>Siciliano et al., <i>Robotics: Modelling, Planning and Control</i></li>
           <li>Spong, Hutchinson &amp; Vidyasagar, <i>Robot Modeling and Control</i></li>
-          <li>Wampler (1986) — ${t('damped least-squares IK')}; Yoshikawa (1985) — ${t('manipulability')}</li>
+          <li>Wampler (1986), ${t('damped least-squares IK')}; Yoshikawa (1985), ${t('manipulability')}</li>
         </ul>
         <p><a data-ext="${REPO_URL}/blob/main/CREDITS.md">CREDITS.md</a></p>
       </div>`,
@@ -1772,6 +1758,10 @@ function toggleShortcuts(show) {
 }
 
 function setTool(mode) {
+  if (mode !== 'select' && !state.prep.dof) {
+    toast(t('The IK target moves joints. Add a revolute or prismatic joint first.'), 'info');
+    mode = 'select';
+  }
   state.tool = mode;
   if (mode !== 'select' && (!state.panelOpen || state.panel !== 'ik')) openPanel('ik');
   renderQuickRail();
@@ -1784,7 +1774,7 @@ function toggleWorkspace() {
     if (!state.prep.dof) { state.showWorkspace = false; toast(t('Add a movable joint first'), 'err'); }
     else {
       viewport.setWorkspace(sampleWorkspace(state.prep, Math.min(30000, 3000 * state.prep.dof)));
-      toast(t('Workspace sampled — random joint configurations within limits'), 'info');
+      toast(t('Workspace sampled from random joint configurations within the limits'), 'info');
     }
   } else viewport.setWorkspace(null);
   renderQuickRail();
@@ -1807,6 +1797,20 @@ function doAction(act, data = {}) {
     }
     case 'tgt-ee': resetTargetToEE(); state.ik.result = null; return renderPanel();
     case 'ik-num': return runNumericIK();
+    case 'link-dir': {
+      const j = getJoint(data.id);
+      if (!j) return;
+      // keep the current length, just change which way it points
+      const len = [j.dh.a, j.dh.d].map((v) => String(v ?? '0').trim().replace(/^-/, '')).find((v) => !/^0*(\.0*)?$/.test(v)) || '0.15';
+      checkpoint();
+      j.dh.theta = '0';
+      j.dh.alpha = '0';
+      if (data.dir === 'x') { j.dh.a = len; j.dh.d = '0'; }
+      else { j.dh.a = '0'; j.dh.d = data.dir === 'down' ? `-${len}` : len; }
+      markDirty();
+      refresh({ panel: true });
+      return fitIfOutOfView();
+    }
     case 'ik-ana': return runAnalyticIK();
     case 'param-add': {
       checkpoint();
@@ -1845,8 +1849,7 @@ function doAction(act, data = {}) {
   }
 }
 
-// -------------------------------------------------------------------- boot
-
+// boot
 const viewport = new Viewport($('#viewport'), {
   onSelect: (id) => select(id),
   onTargetDrag,

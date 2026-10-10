@@ -1,5 +1,4 @@
-// Copies the three.js files the renderer needs into renderer/vendor so the
-// app runs (and packages) without touching node_modules at runtime.
+// copy the three.js bits we use into renderer/vendor (run after updating three)
 const fs = require('fs');
 const path = require('path');
 

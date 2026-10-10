@@ -1,10 +1,5 @@
-// Tiny, safe math-expression compiler (no eval). Used for DH fields, robot
-// parameters (L1, L2, ...) and custom 4x4 matrix entries.
-//
-//   compile("L1*cos(q) + 0.05")  ->  (scope) => number
-//
-// Grammar: + - * / ^ (right assoc), unary +/-, parentheses, numbers
-// (1, 1.5, 2e-3), identifiers, function calls.
+// small expression parser for the input fields, so we don't need eval
+// compile("L1*cos(q) + 0.05").fn({ L1: 0.3, q: 0 })
 
 const FUNCS = {
   sin: Math.sin, cos: Math.cos, tan: Math.tan,
@@ -156,7 +151,7 @@ function collectVars(node, out) {
 
 const cache = new Map();
 
-// Returns { fn, vars } — throws with a readable message on syntax errors.
+// throws on a syntax error, message is shown under the field
 export function compile(src) {
   const key = String(src ?? '').trim() || '0';
   if (cache.has(key)) return cache.get(key);
@@ -171,7 +166,7 @@ export function evaluate(src, scope = {}) {
   return compile(src).fn(scope);
 }
 
-// Like evaluate, but never throws: returns { value, error }.
+// same thing but returns { value, error } instead of throwing
 export function tryEvaluate(src, scope = {}) {
   try {
     const value = evaluate(src, scope);

@@ -1,4 +1,4 @@
-// 3D view of the chain (three.js, Z-up like every robotics textbook).
+// 3D view (three.js), Z is up
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { TransformControls } from 'three/addons/controls/TransformControls.js';
@@ -194,15 +194,14 @@ export class Viewport {
     return mesh;
   }
 
-  // scene = { frames, ee, geometry: jointGeometry[], selectedId, errorIds:Set }
+  // scene: { frames, ee, geometry, selectedId, errorIds, size }
   update(scene) {
     const g = this.robotGroup;
     g.traverse((o) => { if (o.isMesh && o.userData.ownsGeometry) o.geometry.dispose(); });
     g.clear();
 
-    // characteristic size -> radii
     const pts = scene.frames.map((T) => [T[0][3], T[1][3], T[2][3]]);
-    // scene.size is pose-independent, so radii stay fixed while joints move
+    // size comes from the link lengths so parts don't grow when the arm moves
     let s = scene.size;
     if (!(s > 0)) { s = 0; for (const p of pts) s = Math.max(s, Math.hypot(...p)); }
     s = Math.max(0.15, s);
@@ -278,7 +277,7 @@ export class Viewport {
     const toolLine = this._cylinderBetween([lastFrame[0][3], lastFrame[1][3], lastFrame[2][3]], [scene.ee[0][3], scene.ee[1][3], scene.ee[2][3]], rLink * 0.6, this.materials.linkDark);
     if (toolLine) { toolLine.userData.pick = 'tool'; g.add(toolLine); }
 
-    // gizmo scale tracks robot size
+    // gizmo follows robot size
     this.target.children[0].scale.setScalar(0.045 * s);
     this.target.children[1].scale.setScalar(s * 0.7);
   }
@@ -307,7 +306,7 @@ export class Viewport {
     if (visible) {
       this.tcontrols.attach(this.target);
       this.tcontrols.setMode(mode);
-      // move along world X/Y/Z (what you expect when dragging); rotate about the target's own axes
+      // move in world axes, rotate in local ones
       this.tcontrols.setSpace(mode === 'translate' ? 'world' : 'local');
     } else {
       this.tcontrols.detach();
@@ -335,7 +334,7 @@ export class Viewport {
     if (this.onSelect) this.onSelect(hit ? hit.object.userData.pick : null);
   }
 
-  // Camera presets ----------------------------------------------------
+  // camera
   frame(view = 'iso') {
     const box = new THREE.Box3().setFromObject(this.robotGroup);
     if (this.workspaceGroup.children.length) box.union(new THREE.Box3().setFromObject(this.workspaceGroup));
