@@ -69,8 +69,8 @@ ZRANENIA OSÔB, KTORÉ VZNIKNÚ POUŽÍVANÍM APLIKÁCIE ALEBO VÝSLEDKOV Z NEJ.
 
 Zostavenia pre Windows ani macOS nie sú digitálne podpísané. Windows SmartScreen
 môže pri prvom spustení zobraziť varovanie („Systém Windows ochránil váš počítač“).
-Klikni na *Ďalšie informácie* a potom na *Spustiť aj tak*. Na macOS otvor aplikáciu
-prvýkrát pravým kliknutím a voľbou *Otvoriť*. BeanyIK sťahuj iba z oficiálnej
+Klikni na *Ďalšie informácie* a potom na *Spustiť aj tak*. Na macOS ju raz povoľ v
+*Systémových nastaveniach*, *Súkromie a bezpečnosť*, *Aj tak otvoriť*. BeanyIK sťahuj iba z oficiálnej
 stránky vydaní na GitHube uvedenej vyššie.
 
 ## 7. Zmeny

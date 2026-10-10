@@ -109,6 +109,11 @@ Every template plays a demo when you open it. The planned path is dashed and the
 - **Drag and drop chain builder.** Drag *Revolute*, *Prismatic*, *Fixed link* or *Matrix joint* parts from
   **All tools** anywhere into the chain, or drop them on the 3D view to append. Drag the grip to reorder, click to edit.
 - **Standard (distal) or modified (Craig) DH** with θ, d, a and α per joint, joint limits and a home pose.
+- **Point joints without thinking about DH.** Every joint has one-click buttons to tilt its rotation axis
+  (0°, 90°, −90°, 180°) and to turn the link around it. BeanyIK sets the right α or θ for you.
+- **Elementary transforms.** Build Aᵢ as a product of Rx, Ry, Rz, Tx, Ty and Tz, the way lectures write it
+  (`Rz(q) · Tz(d1) · Tx(a2) · Rx(90)`). Each factor is drawn as its matrix with the axis highlighted, and the
+  Matrices panel has a reference card with all six.
 - **Custom matrix joints.** Type the 4×4 transform Aᵢ directly with expressions in `q` (`cos(q)`, `L1*sin(q)`), for when
   your course gives you matrices instead of a DH table. The app checks that the rotation block really is a rotation.
 - **Parameters.** Name your link lengths (`L1 = 0.3`, `L3 = L1 + L2`) and use them in every field. Fields accept
@@ -162,12 +167,20 @@ Click **More info**, then **Run anyway**.
 ### macOS
 
 Download **`BeanyIK-x.y.z-mac-arm64.dmg`** for Apple Silicon (M1 and newer) or **`-mac-x64.dmg`** for Intel Macs, open it and
-drag BeanyIK to Applications. The app isn't notarized by Apple, so the first time you need to **right click it and
-choose Open**. If macOS says the app *is damaged*, run this once in Terminal:
+drag BeanyIK to Applications. The app isn't notarized by Apple (that needs a paid developer account), so the
+first launch takes one extra step:
+
+1. Open BeanyIK. macOS says it can't verify the app. Click **Done**.
+2. Open **System Settings**, **Privacy & Security**, scroll down and click **Open Anyway** next to BeanyIK.
+3. Confirm with your password. From then on it opens normally.
+
+Or do it in one go in Terminal:
 
 ```bash
-xattr -cr /Applications/BeanyIK.app
+xattr -dr com.apple.quarantine /Applications/BeanyIK.app
 ```
+
+> BeanyIK 1.2.0 for Mac had a broken signature and macOS reported it as malware. Use **1.2.1 or newer**.
 
 ### From source
 

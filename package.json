@@ -1,7 +1,7 @@
 {
   "name": "beanyik",
   "productName": "BeanyIK",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Drag & drop robot kinematics builder with DH parameters, custom matrices and forward & inverse kinematics",
   "main": "main.js",
   "private": true,
@@ -119,12 +119,14 @@
       "category": "public.app-category.education",
       "identity": null,
       "hardenedRuntime": false,
-      "artifactName": "BeanyIK-${version}-mac-${arch}.${ext}"
+      "artifactName": "BeanyIK-${version}-mac-${arch}.${ext}",
+      "gatekeeperAssess": false
     },
     "dmg": {
       "title": "BeanyIK ${version}",
       "artifactName": "BeanyIK-${version}-mac-${arch}.${ext}"
-    }
+    },
+    "afterPack": "scripts/adhoc-sign.js"
   },
   "allowScripts": {
     "electron@31.7.7": true

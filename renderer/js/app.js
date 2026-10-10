@@ -1,6 +1,6 @@
 import * as M from './core/mat.js';
 import {
-  makeJoint, makeRobot, prepare, fk, jacobian, manipulability, jointGeometry,
+  makeJoint, makeRobot, prepare, dhToElems, fk, jacobian, manipulability, jointGeometry,
   sampleWorkspace, toDisplay, fromDisplay, isActive,
 } from './core/robot.js';
 import { solveIK, solveAnalytic, ANALYTIC_TEMPLATE } from './core/ik.js';
@@ -574,6 +574,7 @@ function dhCells(j) {
 
 function dhSummary(j) {
   if (j.mode === 'matrix') return t('custom 4×4 transform');
+  if (j.mode === 'elem') return elemProductHTML(j);
   const c = dhCells(j);
   const i = state.robot.joints.indexOf(j) + 1;
   return `${sym('θ', i)} = ${c.theta}, ${sym('d', i)} = ${c.d}, ${sym('a', i)} = ${c.a}, ${sym('α', i)} = ${c.alpha}`;
@@ -587,6 +588,7 @@ function dhTableHTML() {
   const sa = mod ? 'i−1' : 'i';
   const rows = r.joints.map((j, idx) => {
     if (j.mode === 'matrix') return `<tr><td>${idx + 1}</td><td colspan="4" class="muted">${t('custom 4×4 transform')}</td></tr>`;
+    if (j.mode === 'elem') return `<tr><td>${idx + 1}</td><td colspan="4" class="elem-cell">${elemProductHTML(j)}</td></tr>`;
     const c = dhCells(j);
     return mod
       ? `<tr><td>${idx + 1}</td><td>${c.alpha}</td><td>${c.a}</td><td>${c.theta}</td><td>${c.d}</td></tr>`
@@ -661,6 +663,111 @@ function poseFields(key) {
     <div class="grid3" style="margin-top:10px">${f('roll', t('Roll (x)'), 'deg')}${f('pitch', t('Pitch (y)'), 'deg')}${f('yaw', t('Yaw (z)'), 'deg')}</div>`;
 }
 
+// where the twist that tilts joint j's axis lives. standard DH: the previous
+// link's alpha (joint i turns about z of the frame before it), first joint:
+// the base roll. modified DH: the joint's own alpha(i-1)
+function axisTwistRef(j) {
+  const i = state.robot.joints.indexOf(j);
+  if (state.robot.convention === 'modified') return { obj: j.dh, key: 'alpha', where: 'own' };
+  if (i === 0) return { obj: state.robot.base, key: 'roll', where: 'base' };
+  const prev = state.robot.joints[i - 1];
+  if (prev.mode === 'matrix') return null;
+  return { obj: prev.dh, key: 'alpha', where: 'prev' };
+}
+
+const QUICK_ANGLES = ['0', '90', '-90', '180'];
+const sameAngle = (a, b) => {
+  const x = parseFloat(a), y = parseFloat(b);
+  return Number.isFinite(x) && Number.isFinite(y) && Math.abs((((x - y) % 360) + 540) % 360 - 180) < 1e-6;
+};
+
+function quickAngleButtons(act, current, id) {
+  return `<div class="segmented quick-angles">${QUICK_ANGLES.map((v) => `<button class="${sameAngle(current, v) ? 'on' : ''}" data-act="${act}" data-v="${v}" data-id="${id}">${v.replace('-', '−')}°</button>`).join('')}</div>`;
+}
+
+function jointAxisControls(j) {
+  if (!isActive(j) || j.mode !== 'dh') return '';
+  const ref = axisTwistRef(j);
+  const axisHint = !ref ? t('The previous link is a custom matrix, so tilt the axis inside that matrix.')
+    : ref.where === 'base' ? t('First joint, so this turns the robot base.')
+    : ref.where === 'prev' ? t('Sets α of the previous link, that is what tilts this joint in standard DH.')
+    : t('Sets this joint’s α (i−1), the twist in front of it in modified DH.');
+  return `
+    <div class="section-title" style="margin-top:14px">${t(j.type === 'revolute' ? 'Rotation axis' : 'Slide axis')}</div>
+    ${ref ? quickAngleButtons('axis-tilt', ref.obj[ref.key], j.id) : ''}
+    <p class="hint">${axisHint}</p>
+    <div class="section-title" style="margin-top:10px">${t(j.type === 'revolute' ? 'Zero direction of the link' : 'Link direction')}</div>
+    ${quickAngleButtons('theta-quick', j.dh.theta, j.id)}
+    <p class="hint">${t('Turns the link around this joint’s axis (θ offset).')}</p>`;
+}
+
+// elementary matrices drawn like the lecture notes: symbolic entries, the
+// axis that stays put (rotations) or the moving cell (translations) highlighted
+const ELEM_OPS = ['Rx', 'Ry', 'Rz', 'Tx', 'Ty', 'Tz'];
+const opLabel = (op) => `${sym(op[0])}<sub>${op[1]}</sub>`;
+
+function symMatrixHTML(op, arg) {
+  const c = `cos ${arg}`, s = `sin ${arg}`, ms = `−sin ${arg}`;
+  const cells = {
+    Rx: [['1', '0', '0', '0'], ['0', c, ms, '0'], ['0', s, c, '0'], ['0', '0', '0', '1']],
+    Ry: [[c, '0', s, '0'], ['0', '1', '0', '0'], [ms, '0', c, '0'], ['0', '0', '0', '1']],
+    Rz: [[c, ms, '0', '0'], [s, c, '0', '0'], ['0', '0', '1', '0'], ['0', '0', '0', '1']],
+    Tx: [['1', '0', '0', arg], ['0', '1', '0', '0'], ['0', '0', '1', '0'], ['0', '0', '0', '1']],
+    Ty: [['1', '0', '0', '0'], ['0', '1', '0', arg], ['0', '0', '1', '0'], ['0', '0', '0', '1']],
+    Tz: [['1', '0', '0', '0'], ['0', '1', '0', '0'], ['0', '0', '1', arg], ['0', '0', '0', '1']],
+  }[op];
+  const axis = { Rx: 0, Ry: 1, Rz: 2 }[op];
+  const tRow = { Tx: 0, Ty: 1, Tz: 2 }[op];
+  const hl = (r, k) => (axis !== undefined ? (r === axis || k === axis) && r < 3 && k < 3 : r === tRow && k === 3);
+  return `<div class="sym-matrix">${cells.flatMap((row, r) => row.map((v, k) => `<span class="${hl(r, k) ? 'hl' : ''}">${v}</span>`)).join('')}</div>`;
+}
+
+function elemArg(j, e) {
+  // show the value the way it's typed, q gets the joint's index, plain angles get a degree sign
+  const k = qIndexOf(j);
+  const html = mathExpr(e.v).replace(/<span class="mi">q<\/span>/g, k ? sym('q', k) : sym('q'));
+  return e.op[0] === 'R' && /^\s*-?[\d.]+\s*$/.test(e.v) ? `${html}°` : html;
+}
+
+function elemProductHTML(j) {
+  const i = state.robot.joints.indexOf(j) + 1;
+  const parts = (j.elems || []).map((e) => `${opLabel(e.op)}(${elemArg(j, e)})`);
+  return `<span class="mi">A</span><sub>${i}</sub> = ${parts.join(' · ') || '<span class="mi">I</span>'}`;
+}
+
+function elemEditor(j) {
+  const rows = (j.elems || []).map((e, k) => `
+    <div class="elem-row">
+      <div class="elem-head">
+        <span class="elem-op">${opLabel(e.op)}</span>
+        <input class="input mono" data-bind="joint:${j.id}.elems.${k}.v" value="${esc(e.v)}" spellcheck="false" placeholder="${e.op[0] === 'R' ? 'deg' : 'm'}">
+        <span class="unit">${e.op[0] === 'R' ? 'deg' : 'm'}</span>
+        <button class="icon-btn small" data-act="elem-up" data-id="${j.id}" data-k="${k}" title="${t('Move up')}" ${k === 0 ? 'disabled' : ''}>${icon('chevronDown').replace('<svg', '<svg style="transform:rotate(180deg)"')}</button>
+        <button class="icon-btn small" data-act="elem-down" data-id="${j.id}" data-k="${k}" title="${t('Move down')}" ${k === j.elems.length - 1 ? 'disabled' : ''}>${icon('chevronDown')}</button>
+        <button class="icon-btn small danger" data-act="elem-del" data-id="${j.id}" data-k="${k}" title="${t('Remove')}">${icon('trash')}</button>
+      </div>
+      <div class="field-error" data-err="${j.id}.e${k}"></div>
+      ${symMatrixHTML(e.op, elemArg(j, e))}
+    </div>`).join('');
+  return `
+    <div class="section-title">${t('Elementary transforms, multiplied left to right')}</div>
+    <div class="elem-product">${elemProductHTML(j)}</div>
+    <div class="elem-list">${rows || `<div class="empty-note">${t('No transforms yet. Add one below.')}</div>`}</div>
+    <div class="elem-add">${ELEM_OPS.map((op) => `<button class="btn btn-sm" data-act="elem-add" data-op="${op}" data-id="${j.id}">${icon('plus')}${opLabel(op)}</button>`).join('')}</div>
+    <div class="field-error" data-err="${j.id}.elems"></div>
+    <p class="hint">${t('Rotations in degrees, translations in metres. Use <code>q</code> for the joint variable (degrees for revolute, metres for prismatic) and your parameters like <code>L1</code>.')}</p>`;
+}
+
+function elementaryReferenceHTML() {
+  const card = (op, arg) => `<div class="elem-ref"><div class="matrix-caption"><span class="eq">${opLabel(op)}(${arg}) =</span></div>${symMatrixHTML(op, arg)}</div>`;
+  return `
+    <div class="section-title">${t('Rotation about the x, y and z axis')}</div>
+    <div class="elem-ref-grid">${['Rx', 'Ry', 'Rz'].map((op) => card(op, sym('φ'))).join('')}</div>
+    <div class="section-title" style="margin-top:16px">${t('Translation along the x, y and z axis')}</div>
+    <div class="elem-ref-grid">${['Tx', 'Ty', 'Tz'].map((op) => card(op, sym('d'))).join('')}</div>
+    <p class="hint">${t('Standard DH is the product')} ${opLabel('Rz')}(${sym('θ')}) · ${opLabel('Tz')}(${sym('d')}) · ${opLabel('Tx')}(${sym('a')}) · ${opLabel('Rx')}(${sym('α')}). ${t('Use “Elementary transforms” on a joint to build your own.')}</p>`;
+}
+
 function renderProps() {
   const sel = state.selected;
   if (!sel) {
@@ -707,6 +814,7 @@ function renderProps() {
       <div class="section-title">${t('Defined by')}</div>
       <div class="segmented" data-seg="mode">
         <button class="${j.mode === 'dh' ? 'on' : ''}" data-val="dh">${t('DH parameters')}</button>
+        <button class="${j.mode === 'elem' ? 'on' : ''}" data-val="elem">${t('Elementary transforms')}</button>
         <button class="${j.mode === 'matrix' ? 'on' : ''}" data-val="matrix">${t('Custom matrix')}</button>
       </div>
     </div>
@@ -720,6 +828,7 @@ function renderProps() {
           ${dhField('alpha', modified ? 'α (i−1)' : 'α', angUnit)}
         </div>
         <p class="hint">${t(j.type === 'revolute' ? 'θ = q + offset.' : j.type === 'prismatic' ? 'd = q + offset.' : 'No joint variable.')} ${t('Angles in degrees; expressions allowed.')}</p>
+        ${jointAxisControls(j)}
         ${j.type === 'fixed' ? `
         <div class="section-title" style="margin-top:14px">${t('Point the link')}</div>
         <div class="row" style="gap:6px">
@@ -728,7 +837,7 @@ function renderProps() {
           <button class="btn btn-sm" data-act="link-dir" data-dir="down" data-id="${j.id}">↓ ${t('Down (−Z)')}</button>
         </div>
         <p class="hint">${t("Directions are relative to the previous frame. A fixed link has no joint, so the IK target can't move it; change d (along z) or a (along x) instead.")}</p>` : ''}`
-      : matrixEditor()}
+      : j.mode === 'elem' ? elemEditor(j) : matrixEditor()}
     </div>
     ${isActive(j) ? `
     <div class="section">
@@ -848,6 +957,7 @@ function renderMatrices() {
   const opts = [['total', t('⁰T_ee: base to end effector')], ['jacobian', t('Jacobian J(q) (6 × n)')]];
   state.robot.joints.forEach((j, i) => opts.push([`A${i}`, `A${i + 1}: ${jointLabel(j, i)}`]));
   opts.push(['all', t('All link matrices')]);
+  opts.push(['elementary', t('Elementary matrices (reference)')]);
   return `
     <div class="field"><label>${t('Show')}</label>
       <select class="input" data-act="matrix-view">${opts.map(([v, l]) => `<option value="${v}" ${state.matrixView === v ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select></div>
@@ -884,6 +994,10 @@ function renderMatricesBody() {
   if (!el) return;
   const v = state.matrixView;
   let html = '';
+  if (v === 'elementary') {
+    el.innerHTML = elementaryReferenceHTML();
+    return;
+  }
   if (v === 'all') {
     html = lastFK.A.map((A, i) => `<div class="matrix-caption"><span class="eq"><sup>${i}</sup>${sym('A', i + 1)}</span> ${esc(jointLabel(state.robot.joints[i], i))}</div>${matrixHTML(A)}`).join('')
       + `<div class="matrix-caption"><span class="eq"><sup>0</sup>${sym('T')}<sub>ee</sub> = ${sym('T')}<sub>base</sub> ${sym('A', 1)} ⋯ ${sym('A', 'n')} ${sym('T')}<sub>tool</sub></span></div>${matrixHTML(lastFK.ee)}`;
@@ -1628,6 +1742,9 @@ function wireEvents() {
       if (kind === 'convention') state.robot.convention = val;
       if (kind === 'type' || kind === 'mode') {
         const j = getJoint(state.selected);
+        if (kind === 'mode' && val === 'elem' && j.mode !== 'elem' && !(j.elems && j.elems.length)) {
+          j.elems = dhToElems(j, state.robot.convention === 'modified');
+        }
         j[kind] = val;
         if (kind === 'type' && val === 'prismatic' && j.type === 'prismatic' && /^-?180$/.test(j.min)) { j.min = '0'; j.max = '0.3'; }
         if (kind === 'type' && val === 'revolute' && j.min === '0' && j.max === '0.3') { j.min = '-180'; j.max = '180'; }
@@ -2053,6 +2170,39 @@ function doAction(act, data = {}) {
     }
     case 'tgt-ee': resetTargetToEE(); state.ik.result = null; return renderPanel();
     case 'ik-num': return runNumericIK();
+    case 'elem-add': case 'elem-del': case 'elem-up': case 'elem-down': {
+      const j = getJoint(data.id);
+      if (!j) return;
+      checkpoint();
+      const list = j.elems || (j.elems = []);
+      const k = Number(data.k);
+      if (act === 'elem-add') list.push({ op: data.op, v: data.op[0] === 'R' ? (j.type === 'revolute' && !list.some((e) => /\bq\b/.test(e.v)) ? 'q' : '0') : (j.type === 'prismatic' && !list.some((e) => /\bq\b/.test(e.v)) ? 'q' : '0.1') });
+      if (act === 'elem-del') list.splice(k, 1);
+      if (act === 'elem-up' && k > 0) [list[k - 1], list[k]] = [list[k], list[k - 1]];
+      if (act === 'elem-down' && k < list.length - 1) [list[k + 1], list[k]] = [list[k], list[k + 1]];
+      markDirty();
+      refresh({ panel: true });
+      return fitIfOutOfView();
+    }
+    case 'axis-tilt': {
+      const j = getJoint(data.id);
+      const ref = j && axisTwistRef(j);
+      if (!ref) return;
+      checkpoint();
+      ref.obj[ref.key] = data.v;
+      markDirty();
+      refresh({ panel: true });
+      return fitIfOutOfView();
+    }
+    case 'theta-quick': {
+      const j = getJoint(data.id);
+      if (!j) return;
+      checkpoint();
+      j.dh.theta = data.v;
+      markDirty();
+      refresh({ panel: true });
+      return fitIfOutOfView();
+    }
     case 'link-dir': {
       const j = getJoint(data.id);
       if (!j) return;

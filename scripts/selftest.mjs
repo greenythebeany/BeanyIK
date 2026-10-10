@@ -1,6 +1,6 @@
 // quick sanity checks for the math (npm test)
 import { evaluate } from '../renderer/js/core/expr.js';
-import { prepare, fk, jacobian, manipulability } from '../renderer/js/core/robot.js';
+import { prepare, fk, jacobian, manipulability, dhToElems } from '../renderer/js/core/robot.js';
 import { solveIK, solveAnalytic } from '../renderer/js/core/ik.js';
 import { PRESETS } from '../renderer/js/core/presets.js';
 
@@ -36,6 +36,25 @@ for (const preset of PRESETS) {
   check(numericOk >= 22, `numerical IK converges ${numericOk}/25`);
   const J = jacobian(prep, prep.home);
   check(J.length === 6 && J[0].length === prep.dof, `jacobian 6x${prep.dof}, w=${manipulability(J).w.toExponential(2)}`);
+}
+
+console.log('elementary transforms');
+for (const preset of PRESETS) {
+  for (const conv of ['standard', 'modified']) {
+    const robot = preset.build();
+    robot.convention = conv;
+    const a = prepare(robot);
+    const copy = JSON.parse(JSON.stringify(robot));
+    copy.joints.forEach((j) => { if (j.mode === 'dh') { j.elems = dhToElems(j, conv === 'modified'); j.mode = 'elem'; } });
+    const b = prepare(copy);
+    let worst = 0;
+    for (let k = 0; k < 20; k++) {
+      const q = a.limits.map(([lo, hi]) => lo + Math.random() * (hi - lo));
+      const A = fk(a, q).ee, B = fk(b, q).ee;
+      for (let i = 0; i < 3; i++) for (let c = 0; c < 4; c++) worst = Math.max(worst, Math.abs(A[i][c] - B[i][c]));
+    }
+    check(worst < 1e-12 && !Object.keys(b.errors).length, `${preset.id} ${conv}: Rz·Tz·Tx·Rx matches DH (${worst.toExponential(1)})`);
+  }
 }
 
 console.log(failures ? `\n${failures} failure(s)` : '\nall good');
