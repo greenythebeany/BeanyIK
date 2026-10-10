@@ -90,6 +90,7 @@ export const PRESETS = [
     icon: 'arm',
     build: () => makeRobot({
       name: '6-DOF arm',
+      template: 'arm6',
       params: [
         { name: 'd1', value: '0.30' },
         { name: 'a2', value: '0.35' },
@@ -114,6 +115,7 @@ export const PRESETS = [
     icon: 'leg',
     build: () => makeRobot({
       name: 'Robot dog leg (left)',
+      template: 'leg3',
       params: [
         { name: 'L0', value: '0.06' },
         { name: 'L1', value: '0.20' },
@@ -135,6 +137,7 @@ export const PRESETS = [
     icon: 'planar',
     build: () => makeRobot({
       name: 'Planar 2R',
+      template: 'planar2',
       params: [{ name: 'L1', value: '0.4' }, { name: 'L2', value: '0.3' }],
       joints: [
         J('revolute', 'Joint 1', { a: 'L1' }),
@@ -150,6 +153,7 @@ export const PRESETS = [
     icon: 'scara',
     build: () => makeRobot({
       name: 'SCARA',
+      template: 'scara',
       params: [
         { name: 'd1', value: '0.40' },
         { name: 'L1', value: '0.35' },

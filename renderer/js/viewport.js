@@ -69,6 +69,10 @@ export class Viewport {
     this.scene.add(this.robotGroup);
     this.workspaceGroup = new THREE.Group();
     this.scene.add(this.workspaceGroup);
+    this.demoGroup = new THREE.Group();
+    this.scene.add(this.demoGroup);
+    this.demoPath = null;
+    this.trail = null;
 
     this.materials = {
       link: new THREE.MeshStandardMaterial({ color: 0xe9ecf2, metalness: 0.15, roughness: 0.45 }),
@@ -280,6 +284,37 @@ export class Viewport {
     // gizmo follows robot size
     this.target.children[0].scale.setScalar(0.045 * s);
     this.target.children[1].scale.setScalar(s * 0.7);
+  }
+
+  // planned demo path, faint dashed line
+  setDemoPath(points) {
+    if (this.demoPath) { this.demoGroup.remove(this.demoPath); this.demoPath.geometry.dispose(); this.demoPath = null; }
+    if (!points) return;
+    const geom = new THREE.BufferGeometry();
+    geom.setAttribute('position', new THREE.BufferAttribute(points, 3));
+    const dark = document.documentElement.dataset.theme === 'dark';
+    this.demoPath = new THREE.Line(geom, new THREE.LineDashedMaterial({ color: dark ? 0x7fb2ff : 0x1473e6, dashSize: 0.014, gapSize: 0.009, transparent: true, opacity: 0.85 }));
+    this.demoPath.computeLineDistances();
+    this.demoGroup.add(this.demoPath);
+  }
+
+  // where the tool actually went
+  setTrail(points) {
+    if (!points) {
+      if (this.trail) { this.demoGroup.remove(this.trail); this.trail.geometry.dispose(); this.trail = null; }
+      return;
+    }
+    if (!this.trail) {
+      const geom = new THREE.BufferGeometry();
+      geom.setAttribute('position', new THREE.BufferAttribute(new Float32Array(3 * 400), 3));
+      this.trail = new THREE.Line(geom, new THREE.LineBasicMaterial({ color: 0x7cc520, linewidth: 2 }));
+      this.trail.frustumCulled = false;
+      this.demoGroup.add(this.trail);
+    }
+    const attr = this.trail.geometry.attributes.position;
+    attr.array.set(points.slice(0, attr.array.length));
+    attr.needsUpdate = true;
+    this.trail.geometry.setDrawRange(0, Math.min(points.length, attr.array.length) / 3);
   }
 
   setWorkspace(points) {

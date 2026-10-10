@@ -1,7 +1,7 @@
 {
   "name": "beanyik",
   "productName": "BeanyIK",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "Drag & drop robot kinematics builder with DH parameters, custom matrices and forward & inverse kinematics",
   "main": "main.js",
   "private": true,
@@ -10,7 +10,7 @@
   "scripts": {
     "start": "electron .",
     "vendor": "node scripts/vendor.js",
-    "test": "node scripts/selftest.mjs",
+    "test": "node scripts/selftest.mjs && node scripts/demo-check.mjs && node scripts/flick-check.mjs",
     "dist": "cross-env CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder"
   },
   "dependencies": {},

@@ -74,21 +74,49 @@ function solveFrom(prep, Td, q0, o) {
   return { q, ok, posErr: pe, rotErr: re, iterations: iter };
 }
 
-// starts from the current pose so dragging stays smooth, random restarts if it gets stuck
+// how far the joints actually have to travel. no wrapping on purpose: a joint
+// with limits can't take the short way through ±180°
+function jointDistance(prep, a, b) {
+  return Math.max(...a.map((v, i) => Math.abs(v - b[i])));
+}
+
+// starts from the current pose. continuous: true (dragging, demos) never jumps
+// to another branch and moves each joint at most maxTravel per call, like a
+// real arm would. otherwise random restarts are allowed but the solution
+// closest to the current pose wins.
 export function solveIK(prep, Td, seed, options = {}) {
   const o = { ...DEFAULT_IK_OPTIONS, ...options };
   if (!prep.dof) return { q: [], ok: false, posErr: Infinity, rotErr: Infinity, iterations: 0, error: 'Robot has no movable joints' };
   let best = solveFrom(prep, Td, seed, o);
-  for (let r = 0; r < o.restarts && !best.ok; r++) {
+
+  if (o.continuous) {
+    const travel = jointDistance(prep, best.q, seed);
+    if (o.maxTravel && travel > o.maxTravel) {
+      const k = o.maxTravel / travel;
+      best.q = clampToLimits(prep, seed.map((v, i) => v + (best.q[i] - v) * k));
+      best.ok = false;
+      best.limited = true;
+    }
+    return best;
+  }
+
+  if (best.ok) return best;
+  const score = (x) => x.posErr + (o.mode === 'position' ? 0 : x.rotErr * 0.1);
+  const found = [];
+  for (let r = 0; r < o.restarts; r++) {
     const rand = prep.limits.map(([a, b]) => {
       const lo = Number.isFinite(a) ? a : -Math.PI, hi = Number.isFinite(b) ? b : Math.PI;
       return lo + Math.random() * (hi - lo);
     });
     const res = solveFrom(prep, Td, rand, o);
-    const score = (x) => x.posErr + (o.mode === 'position' ? 0 : x.rotErr * 0.1);
-    if (res.ok || score(res) < score(best)) best = res;
+    if (res.ok) found.push(res);
+    else if (!found.length && score(res) < score(best)) best = res;
   }
-  best.restartsUsed = !best.ok;
+  if (found.length) {
+    found.sort((a, b) => jointDistance(prep, a.q, seed) - jointDistance(prep, b.q, seed));
+    best = found[0];
+  }
+  best.restartsUsed = true;
   return best;
 }
 

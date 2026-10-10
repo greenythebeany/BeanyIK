@@ -35,6 +35,7 @@ const P = {
   file: '<path d="M5 2.5h6.5l3.5 3.5v11.5H5z"/><path d="M11.5 2.5V6H15"/>',
   export: '<path d="M10 12V3M6.5 6.5 10 3l3.5 3.5"/><path d="M4 11v5.5h12V11"/>',
   play: '<path d="M6 4l10 6-10 6z"/>',
+  stop: '<rect x="5" y="5" width="10" height="10" rx="1.5"/>',
   check: '<path d="M4 10.5 8 14.5 16 5.5"/>',
   warn: '<path d="M10 3 18 17H2z"/><path d="M10 8v4M10 14.5h.01"/>',
   info: '<circle cx="10" cy="10" r="7"/><path d="M10 9v5M10 6.5h.01"/>',

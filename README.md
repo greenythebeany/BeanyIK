@@ -64,6 +64,14 @@ are typeset the way a textbook would: θᵢ, dᵢ, aᵢ, αᵢ in a booktabs DH 
 - **Numerical IK**: damped least squares (Levenberg-Marquardt) on the Jacobian, with joint
   limits and random restarts. Choose position + orientation or position only. Drag the
   green target (`Ctrl+M` move / `Ctrl+R` rotate) and the robot follows live. Every drag is undoable.
+- **Demo animations.** Every template plays its own motion when you open it: the 6-DOF arm traces a circle
+  with the tool pointing down, the leg walks (stance and swing), the 2R arm draws a figure eight and the SCARA
+  does pick and place. The planned path is drawn dashed and the tool leaves a trail. Your own robots get a smooth
+  joint sweep. Play or stop with `Ctrl+P`.
+- **No flicking.** While you drag the target (and during demos) the solver only moves continuously from the
+  current pose, never jumps to another elbow configuration, and caps how far a joint can move per frame, like a
+  real arm. Jumps you ask for (Solve, picking an analytic branch, Home, typed joint values) glide over smoothly.
+  `npm test` stress-tests this on every template plus randomly generated robots.
 - **Analytic IK.** Write your closed-form solution in the built-in editor. Every branch you return is
   verified with FK and flagged *reaches* or *outside limits*. Each template ships with a worked example.
 - **Jacobian & singularities**: geometric Jacobian, manipulability, smallest singular value, det J, and a
@@ -111,7 +119,7 @@ npm start
 Other scripts:
 
 ```bash
-npm test        # headless kinematics self-test (FK, numerical IK, every template's analytic IK)
+npm test        # kinematics self-test, demo paths and the no-flicker stress test
 npm run dist    # build a Windows installer + portable exe into dist/
 npm run vendor  # re-copy three.js from node_modules into renderer/vendor
 ```
@@ -155,6 +163,7 @@ Press **F1** in the app for the full list.
 | `Esc` | Back to select mode / clear selection |
 | `Ctrl+Enter` / `Ctrl+Shift+Enter` | Solve IK numerically / analytically |
 | `Ctrl+H` | Home pose |
+| `Ctrl+P` | Play / stop the demo animation |
 | `Ctrl+T` (or `Ctrl+N`) | New robot in a new tab |
 | `Ctrl+W` | Close the current tab (asks if there are unsaved changes) |
 | `Ctrl+1` … `Ctrl+8` | Jump to tab: `Ctrl+1` is Home, `Ctrl+2` the first robot, … |

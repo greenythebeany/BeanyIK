@@ -5,6 +5,7 @@ import {
 } from './core/robot.js';
 import { solveIK, solveAnalytic, ANALYTIC_TEMPLATE } from './core/ik.js';
 import { PRESETS, blankRobot } from './core/presets.js';
+import { demoFor, hasPathDemo, samplePath } from './core/demos.js';
 import { toMatlab, dhTableCSV, dhTableLatex, matrixToText, matrixToMatlab } from './core/export.js';
 import { FUNCTION_NAMES } from './core/expr.js';
 import { icon, glyph, hydrateIcons } from './icons.js';
@@ -129,6 +130,7 @@ function snapshot() {
 }
 
 function checkpoint() {
+  stopMotion();
   state.history.past.push(snapshot());
   if (state.history.past.length > 200) state.history.past.shift();
   state.history.future = [];
@@ -205,6 +207,7 @@ function loadDoc(i) {
 
 function switchToDoc(i, { stash = true } = {}) {
   if (i < 0 || i >= docs.length) return;
+  if (i !== activeDoc) stopMotion();
   if (i !== activeDoc) {
     if (stash) stashActive();
     loadDoc(i);
@@ -946,6 +949,131 @@ function resetTargetToEE() {
   viewport.setTarget(state.ik.target);
 }
 
+// motion. everything that moves the arm on its own goes through here so
+// joints always travel smoothly, never snap to another configuration
+
+const FOLLOW_TRAVEL = 0.07; // max joint change per frame while chasing the target (rad or m)
+const motion = { follow: null, tween: null, demo: null };
+
+function stopMotion() {
+  if (motion.follow) cancelAnimationFrame(motion.follow);
+  if (motion.tween) cancelAnimationFrame(motion.tween.raf);
+  motion.follow = null;
+  motion.tween = null;
+  stopDemo();
+}
+
+// arm chases state.ik.target a little every frame until it gets there
+function followTarget() {
+  if (motion.follow) return;
+  if (motion.tween) { cancelAnimationFrame(motion.tween.raf); motion.tween = null; }
+  const step = () => {
+    motion.follow = null;
+    if (!state.prep.dof) return;
+    const res = solveIK(state.prep, state.ik.target, currentQ(), { mode: state.ik.mode, continuous: true, maxTravel: FOLLOW_TRAVEL, maxIter: 60 });
+    setQ(res.q);
+    state.ik.result = res;
+    updateScene();
+    if (res.limited) motion.follow = requestAnimationFrame(step);
+  };
+  motion.follow = requestAnimationFrame(step);
+}
+
+// glide from the current pose to q (joint space, eased)
+function tweenTo(qTarget) {
+  if (motion.tween) cancelAnimationFrame(motion.tween.raf);
+  const from = currentQ();
+  const dist = Math.max(0, ...qTarget.map((v, i) => Math.abs(v - from[i])));
+  const duration = Math.min(1600, Math.max(350, (dist / (120 * M.DEG)) * 1000));
+  const t0 = performance.now();
+  const tick = (now) => {
+    const s = Math.min(1, (now - t0) / duration);
+    const e = s * s * (3 - 2 * s);
+    setQ(from.map((v, i) => v + (qTarget[i] - v) * e));
+    updateScene();
+    if (s < 1) motion.tween.raf = requestAnimationFrame(tick);
+    else motion.tween = null;
+  };
+  motion.tween = { raf: requestAnimationFrame(tick) };
+}
+
+// demo playback
+function startDemo() {
+  if (!state.prep.dof) { toast(t('Add a movable joint first'), 'err'); return; }
+  stopMotion();
+  const demo = demoFor(state.robot);
+  const docRef = docs[activeDoc];
+  const trail = [];
+  let q = currentQ();
+  if (demo.kind === 'path') {
+    // find a start pose on the path, then ease into it before playing
+    const start = solveIK(state.prep, demo.pose(0), state.prep.home, { mode: demo.mode, restarts: 12 });
+    q = start.q;
+  } else {
+    q = demo.q(0, state.prep);
+  }
+  viewport.setDemoPath(samplePath(demo));
+  const from = currentQ();
+  const ease = 700;
+  let t0 = performance.now();
+  const tick = (now) => {
+    if (docs[activeDoc] !== docRef || state.view !== 'doc') { stopDemo(); return; }
+    const el = now - t0;
+    if (el < ease) {
+      const s = el / ease, e = s * s * (3 - 2 * s);
+      setQ(from.map((v, i) => v + (q[i] - v) * e));
+    } else {
+      const t = (el - ease) / 1000;
+      if (demo.kind === 'path') {
+        const res = solveIK(state.prep, demo.pose(t), currentQ(), { mode: demo.mode, continuous: true, maxTravel: FOLLOW_TRAVEL * 2, maxIter: 40 });
+        setQ(res.q);
+      } else {
+        setQ(demo.q(t, state.prep));
+      }
+      const T = fk(state.prep, currentQ()).ee;
+      trail.push(T[0][3], T[1][3], T[2][3]);
+      if (trail.length > 3 * 360) trail.splice(0, 3);
+      viewport.setTrail(trail);
+    }
+    updateScene();
+    if (motion.demo) motion.demo.raf = requestAnimationFrame(tick);
+  };
+  motion.demo = { raf: requestAnimationFrame(tick), caption: demo.caption };
+  syncTargetGizmo();
+  renderDemoChip();
+  renderQuickRail();
+}
+
+function stopDemo() {
+  if (!motion.demo) return;
+  cancelAnimationFrame(motion.demo.raf);
+  motion.demo = null;
+  viewport.setDemoPath(null);
+  viewport.setTrail(null);
+  renderDemoChip();
+  renderQuickRail();
+  if (state.robot) { snapTargetToEE(); syncTargetGizmo(); }
+}
+
+function toggleDemo() {
+  if (motion.demo) stopDemo();
+  else startDemo();
+}
+
+function renderDemoChip() {
+  const el = $('#demo-chip');
+  if (!motion.demo) { el.hidden = true; return; }
+  el.innerHTML = `<span class="demo-dot"></span><b>${t('Demo')}</b> ${t(motion.demo.caption)} <button class="btn btn-sm" data-demo-stop>${icon('close')}${t('Stop')}</button>`;
+  el.hidden = false;
+}
+
+const clampAll = (q) => q.map((v, i) => Math.min(state.prep.limits[i][1], Math.max(state.prep.limits[i][0], v)));
+// target catches up once a glide is done
+function snapLater() {
+  const wait = () => (motion.tween ? requestAnimationFrame(wait) : snapTargetToEE());
+  requestAnimationFrame(wait);
+}
+
 // put the IK target back on the tool after a manual pose change
 function snapTargetToEE() {
   if (!lastFK || viewport.tcontrols.dragging) return;
@@ -977,7 +1105,7 @@ function scheduleWorkspace() {
 }
 
 function syncTargetGizmo() {
-  const visible = state.prep?.dof > 0 && (state.tool !== 'select' || (state.panelOpen && state.panel === 'ik'));
+  const visible = !motion.demo && state.prep?.dof > 0 && (state.tool !== 'select' || (state.panelOpen && state.panel === 'ik'));
   if (!state.ik.target) resetTargetToEE();
   viewport.setTarget(state.ik.target);
   viewport.setTargetVisible(visible, state.tool === 'rotate' ? 'rotate' : 'translate');
@@ -985,12 +1113,12 @@ function syncTargetGizmo() {
 
 function runNumericIK(target = state.ik.target, { quiet = false } = {}) {
   if (!state.prep.dof) { if (!quiet) toast(t('Add a movable joint first'), 'err'); return; }
-  const res = solveIK(state.prep, target, currentQ(), { mode: state.ik.mode, restarts: quiet ? 2 : 12 });
-  if (!quiet) checkpoint();
-  setQ(res.q);
+  if (quiet) { state.ik.target = target; followTarget(); return; }
+  const res = solveIK(state.prep, target, currentQ(), { mode: state.ik.mode, restarts: 12 });
+  checkpoint();
   state.ik.result = res;
-  if (!quiet) markDirty();
-  updateScene();
+  markDirty();
+  tweenTo(res.q);
 }
 
 function runAnalyticIK() {
@@ -1000,9 +1128,8 @@ function runAnalyticIK() {
   const first = state.ik.analytic.solutions?.find((s) => s.ok && s.inLimits) || state.ik.analytic.solutions?.find((s) => s.ok);
   if (first) {
     checkpoint();
-    setQ(first.q);
     markDirty();
-    updateScene();
+    tweenTo(first.q);
   }
 }
 
@@ -1020,7 +1147,7 @@ function onTargetDrag(T) {
   if (!state.ik.live || dragFrame) return;
   dragFrame = requestAnimationFrame(() => {
     dragFrame = null;
-    runNumericIK(state.ik.target, { quiet: true });
+    followTarget();
     if (state.panel === 'ik') {
       const { roll, pitch, yaw } = M.toRPY(state.ik.target);
       const vals = { x: T[0][3], y: T[1][3], z: T[2][3], roll: roll / M.DEG, pitch: pitch / M.DEG, yaw: yaw / M.DEG };
@@ -1078,6 +1205,7 @@ function renderQuickRail() {
     ${b('workspace', 'cloud', 'Workspace cloud (Ctrl+K)', state.showWorkspace)}
     <div class="sep"></div>
     ${b('home', 'home2', 'Home pose (Ctrl+H)')}
+    ${b('demo', motion.demo ? 'stop' : 'play', motion.demo ? 'Stop demo (Ctrl+P)' : 'Play demo (Ctrl+P)', !!motion.demo)}
     ${b('keys', 'keyboard', 'Keyboard shortcuts (F1)')}`;
 }
 
@@ -1201,6 +1329,7 @@ function newRobot() {
 function loadPreset(id) {
   const p = PRESETS.find((x) => x.id === id);
   openRobot(p.build());
+  if (hasPathDemo(state.robot)) setTimeout(startDemo, 350);
 }
 
 // menu
@@ -1326,6 +1455,7 @@ function wireEvents() {
   $('#btn-redo').onclick = redo;
   $('#btn-save').onclick = () => (state.view === 'doc' ? save() : openFile());
   $('#btn-menu').onclick = (e) => { e.stopPropagation(); toggleMenu(); };
+  $('#demo-chip').addEventListener('click', (e) => { if (e.target.closest('[data-demo-stop]')) stopDemo(); });
   $('#tabs').addEventListener('click', (e) => {
     const close = e.target.closest('[data-close]');
     if (close) { e.stopPropagation(); closeDoc(+close.dataset.close); return; }
@@ -1416,6 +1546,7 @@ function wireEvents() {
     if (q === 'workspace') toggleWorkspace();
     if (q === 'home') doAction('home');
     if (q === 'keys') toggleShortcuts();
+    if (q === 'demo') toggleDemo();
     renderQuickRail();
   });
 
@@ -1452,9 +1583,9 @@ function wireEvents() {
         checkpoint();
         const q = currentQ();
         q[i] = fromDisplay(l.joint, v);
-        setQ(q);
         markDirty();
-        poseChanged();
+        tweenTo(clampAll(q));
+        snapLater();
       }
     }
   });
@@ -1513,7 +1644,7 @@ function wireEvents() {
     const sol = e.target.closest('[data-sol]');
     if (sol) {
       const s = state.ik.analytic.solutions[+sol.dataset.sol];
-      if (s && s.q.length === state.prep.dof) { checkpoint(); setQ(s.q); markDirty(); updateScene(); }
+      if (s && s.q.length === state.prep.dof) { checkpoint(); markDirty(); tweenTo(s.q); }
     }
   });
 
@@ -1543,6 +1674,7 @@ function wireEvents() {
         h: () => doAction('home'),
         f: () => { state.showFrames = !state.showFrames; updateScene(); renderQuickRail(); },
         k: () => toggleWorkspace(),
+        p: () => toggleDemo(),
         d: () => { if (getJoint(state.selected)) duplicateJoint(state.selected); },
         0: () => viewport.frame(state.camView),
         enter: () => (e.shiftKey ? doAction('ik-ana') : doAction('ik-num')),
@@ -1730,6 +1862,7 @@ const SHORTCUTS = [
   ['Inverse kinematics', [
     ['Ctrl+M', 'Move mode (drag the IK target)'], ['Ctrl+R', 'Rotate mode (rotate the IK target)'], ['Esc', 'Back to select mode'],
     ['Ctrl+Enter', 'Solve numerically'], ['Ctrl+Shift+Enter', 'Solve analytically'], ['Ctrl+H', 'Home pose'],
+    ['Ctrl+P', 'Play / stop the demo'],
   ]],
   ['Editing', [
     ['Ctrl+Z', 'Undo'], ['Ctrl+Y', 'Redo'], ['Ctrl+D', 'Duplicate selected joint'], ['Delete', 'Delete selected joint'],
@@ -1784,16 +1917,16 @@ function doAction(act, data = {}) {
   switch (act) {
     case 'del': return deleteJoint(data.id);
     case 'dup': return duplicateJoint(data.id);
-    case 'home': checkpoint(); setQ(state.prep.home); markDirty(); return poseChanged();
-    case 'zero': checkpoint(); setQ(state.prep.home.map(() => 0)); markDirty(); return poseChanged();
+    case 'home': checkpoint(); markDirty(); tweenTo(clampAll(state.prep.home)); return snapLater();
+    case 'zero': checkpoint(); markDirty(); tweenTo(clampAll(state.prep.home.map(() => 0))); return snapLater();
     case 'random': {
       checkpoint();
-      setQ(state.prep.limits.map(([a, b]) => {
+      markDirty();
+      tweenTo(state.prep.limits.map(([a, b]) => {
         const lo = Number.isFinite(a) ? a : -Math.PI, hi = Number.isFinite(b) ? b : Math.PI;
         return lo + Math.random() * (hi - lo);
       }));
-      markDirty();
-      return poseChanged();
+      return snapLater();
     }
     case 'tgt-ee': resetTargetToEE(); state.ik.result = null; return renderPanel();
     case 'ik-num': return runNumericIK();

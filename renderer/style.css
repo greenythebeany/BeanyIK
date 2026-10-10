@@ -538,6 +538,15 @@ sub, sup { font-size: 0.72em; line-height: 0; }
   padding: 5px 10px; border-radius: 6px; background: color-mix(in srgb, var(--bg-panel) 80%, transparent); backdrop-filter: blur(6px);
 }
 .fig-caption b { color: var(--text); font-weight: 700; margin-right: 4px; }
+.demo-chip {
+  position: absolute; right: 16px; top: 12px; display: flex; align-items: center; gap: 8px; padding: 5px 6px 5px 12px;
+  border-radius: 18px; font-size: 12.5px; color: var(--text-2); background: color-mix(in srgb, var(--bg-panel) 88%, transparent);
+  backdrop-filter: blur(6px); border: 1px solid var(--border); box-shadow: var(--shadow-1);
+}
+.demo-chip b { color: var(--text); }
+.demo-chip .btn { height: 26px; }
+.demo-dot { width: 8px; height: 8px; border-radius: 50%; background: #7cc520; box-shadow: 0 0 0 0 rgba(124, 197, 32, 0.6); animation: pulse 1.4s infinite; }
+@keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(124, 197, 32, 0.55); } 70% { box-shadow: 0 0 0 7px rgba(124, 197, 32, 0); } 100% { box-shadow: 0 0 0 0 rgba(124, 197, 32, 0); } }
 
 /* modal dialogs (shortcuts, about) */
 .modal {
