@@ -10,7 +10,9 @@ BeanyIK is made by **GreenyBeany** ([@greenythebeany](https://github.com/greenyt
   `renderer/logo.png`, `thumbnail.png`).
 - **UI icons**: drawn for BeanyIK as inline SVG (`renderer/js/icons.js`), in the
   style of Adobe Spectrum outline icons. No icon set is redistributed.
-- **Download button** (`download_icon.png`): made for this project.
+- **Download button** (`download_icon.png`) and **installer artwork** (`build/installerSidebar.bmp`,
+  `build/installerHeader.bmp`): made for this project from the logo.
+- **Screenshots and demo animations** in `docs/` and on the website: captured from the app itself.
 - The layout is inspired by Adobe Acrobat's current interface (tab bar, *All tools*
   panel, quick-tools rail, right-hand panel rail). BeanyIK is not affiliated with
   or endorsed by Adobe.
@@ -36,6 +38,8 @@ installed, and it is not included in the app.
 | [Electron](https://www.electronjs.org/) | MIT | Desktop runtime; bundles Chromium (BSD-3-Clause and others) and Node.js (MIT). Full notices ship with the app as `LICENSES.chromium.html`. |
 | [three.js](https://threejs.org/) r170 | MIT | 3D viewport. Vendored in `renderer/vendor/three/` with its `LICENSE`. Includes `OrbitControls` and `TransformControls` from the three.js examples. |
 | [electron-builder](https://www.electron.build/) | MIT | Build/packaging only (not shipped inside the app). |
+| [React](https://react.dev/) and [Vite](https://vitejs.dev/) | MIT | Website only (`website/`). |
+| [shields.io](https://shields.io/) | CC0 | Badges in the README. |
 
 ## Kinematics references
 

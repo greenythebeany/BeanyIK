@@ -4,3 +4,5 @@ dist/
 npm-debug.log*
 *.log
 .claude/
+website/node_modules/
+website/dist/

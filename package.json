@@ -10,7 +10,7 @@
   "scripts": {
     "start": "electron .",
     "vendor": "node scripts/vendor.js",
-    "test": "node scripts/selftest.mjs && node scripts/demo-check.mjs && node scripts/flick-check.mjs",
+    "test": "node scripts/selftest.mjs && node scripts/demo-check.mjs && node scripts/flick-check.mjs && node scripts/site-arm-check.mjs",
     "dist": "cross-env CSC_IDENTITY_AUTO_DISCOVERY=false electron-builder --win --publish never",
     "dist:mac": "electron-builder --mac --publish never"
   },
