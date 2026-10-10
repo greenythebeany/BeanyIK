@@ -30,17 +30,50 @@ const SHOTS = {
   ],
 };
 
-// latest release from github, so download buttons always point at real files
+// version baked in at build time, so the page never shows without one
+const BUILD_VERSION = typeof __APP_VERSION__ === 'string' ? __APP_VERSION__ : '';
+const CACHE_KEY = 'beanyik_site_release';
+
+// file names follow the release workflow, so links work even without the api
+function fallbackRelease(version) {
+  const names = [
+    `BeanyIK-Setup-${version}.exe`, `BeanyIK-Portable-${version}.exe`,
+    `BeanyIK-${version}-mac-arm64.dmg`, `BeanyIK-${version}-mac-x64.dmg`,
+  ];
+  return {
+    version,
+    url: `${REPO}/releases/tag/v${version}`,
+    assets: Object.fromEntries(names.map((name) => [name, { name, size: 0, browser_download_url: `${REPO}/releases/download/v${version}/${name}` }])),
+  };
+}
+
+const newer = (a, b) => {
+  const pa = String(a).split('.').map(Number), pb = String(b).split('.').map(Number);
+  for (let i = 0; i < 3; i++) if ((pa[i] || 0) !== (pb[i] || 0)) return (pa[i] || 0) > (pb[i] || 0);
+  return false;
+};
+
+// latest release from github, cached for a few minutes so we stay under the rate limit
 function useRelease() {
-  const [rel, setRel] = useState(null);
+  const [rel, setRel] = useState(() => (BUILD_VERSION ? fallbackRelease(BUILD_VERSION) : null));
   useEffect(() => {
+    const apply = (r) => setRel((cur) => (!cur || !newer(cur.version, r.version) ? r : cur));
+    try {
+      const cached = JSON.parse(sessionStorage.getItem(CACHE_KEY) || 'null');
+      if (cached && Date.now() - cached.at < 10 * 60 * 1000) { apply(cached.rel); return; }
+    } catch { /* no storage */ }
     fetch('https://api.github.com/repos/greenythebeany/BeanyIK/releases/latest')
       .then((r) => (r.ok ? r.json() : null))
-      .then((j) => j && setRel({
-        version: (j.tag_name || '').replace(/^v/, ''),
-        url: j.html_url,
-        assets: Object.fromEntries((j.assets || []).map((a) => [a.name, a])),
-      }))
+      .then((j) => {
+        if (!j) return;
+        const r = {
+          version: (j.tag_name || '').replace(/^v/, ''),
+          url: j.html_url,
+          assets: Object.fromEntries((j.assets || []).map((a) => [a.name, a])),
+        };
+        try { sessionStorage.setItem(CACHE_KEY, JSON.stringify({ at: Date.now(), rel: r })); } catch { /* fine */ }
+        apply(r);
+      })
       .catch(() => {});
   }, []);
   return rel;
@@ -112,7 +145,7 @@ export default function App() {
   const macIntel = findAsset(rel, /mac-x64\.dmg$/i);
   const primary = isMac ? (macArm || macIntel) : setup;
   const releasesUrl = rel?.url || `${REPO}/releases/latest`;
-  const mb = (a) => (a ? `${(a.size / 1048576).toFixed(0)} MB` : '');
+  const mb = (a) => (a?.size ? `${(a.size / 1048576).toFixed(0)} MB` : '');
   const nav = [['features', t.nav.features], ['demos', t.nav.demos], ['try', t.nav.try], ['screens', t.nav.screens], ['download', t.nav.download], ['faq', t.nav.faq]];
   const ctx = useMemo(() => ({ lang, t, setLang }), [lang, t]);
 
