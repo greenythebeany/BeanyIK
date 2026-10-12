@@ -9,7 +9,7 @@ export const STRINGS = {
     hero: {
       badge: 'Free · Windows and macOS · English and Slovak',
       title: 'Build a robot from parts, then make it reach.',
-      text: 'BeanyIK is a desktop app for robot kinematics. Drag joints into a chain, describe them with DH parameters or your own 4×4 matrices, and solve forward and inverse kinematics live in 3D.',
+      text: 'BeanyIK is a desktop app for robot kinematics. Drag joints into a chain, describe them with DH parameters or your own 4×4 matrices, or import a URDF, and solve forward and inverse kinematics live in 3D.',
       download: 'Download for {os}',
       downloadAll: 'All downloads',
       github: 'View on GitHub',
@@ -32,7 +32,7 @@ export const STRINGS = {
         ['code', 'red', 'Your closed form', 'Write your own analytic solution in the app. Every branch is verified with forward kinematics.'],
         ['shield', 'teal', 'No flicking', 'While dragging, joints move a few degrees per frame at most and never jump to the other elbow solution.'],
         ['jacobian', 'orange', 'Jacobian and singularities', 'Manipulability, smallest singular value, det J and a warning when the arm gets close to a singular pose.'],
-        ['export', 'magenta', 'MATLAB and LaTeX', 'Export symbolic FK and the Jacobian to MATLAB, the DH table to CSV or LaTeX, any matrix to MATLAB.'],
+        ['export', 'magenta', 'URDF in, MATLAB out', 'Import a robot from a URDF file with its joint limits. Export symbolic FK and the Jacobian to MATLAB, the DH table to CSV or LaTeX.'],
       ],
     },
     demos: {
@@ -65,7 +65,7 @@ export const STRINGS = {
       kicker: 'How it works',
       title: 'From empty chain to solved pose',
       items: [
-        ['Build', 'Pick a template or start empty, then drag parts from All tools into the chain.'],
+        ['Build', 'Pick a template, import a URDF or start empty, then drag parts from All tools into the chain.'],
         ['Describe', 'Fill in θ, d, a, α or type the matrix. Put lengths into parameters to change them in one place.'],
         ['Solve', 'Drag the target, press Ctrl+Enter, or run your own closed form and compare every branch.'],
         ['Export', 'Save a .robot.json, or export to MATLAB, CSV and LaTeX for your report.'],
@@ -107,6 +107,7 @@ export const STRINGS = {
         ['Can I use it to move a real robot?', 'It is an educational and design tool. Use it to check your math, never as the only basis for moving real hardware.'],
         ['My course uses the modified (Craig) convention.', 'Switch it at the top of the Kinematic chain panel. The DH table and the meaning of a and α follow.'],
         ['I only have matrices, not a DH table.', 'Use Matrix joint parts and type each Aᵢ with the variable q in it.'],
+        ['Can I load my robot from ROS?', 'Yes, open a .urdf through Menu, Import URDF. The longest moving chain comes over as elementary transforms with its limits, a gripper at the tip is left out. Meshes are ignored and xacro files need converting to URDF first.'],
         ['Is there a Slovak version?', 'Yes, the whole app, the installer, the README and this website are in English and Slovak.'],
       ],
     },
@@ -127,7 +128,7 @@ export const STRINGS = {
     hero: {
       badge: 'Zadarmo · Windows a macOS · slovenčina a angličtina',
       title: 'Poskladaj robota z dielov a nauč ho dosiahnuť cieľ.',
-      text: 'BeanyIK je desktopová aplikácia na kinematiku robotov. Pretiahni kĺby do reťazca, popíš ich DH parametrami alebo vlastnými maticami 4×4 a rieš priamu aj inverznú kinematiku naživo v 3D.',
+      text: 'BeanyIK je desktopová aplikácia na kinematiku robotov. Pretiahni kĺby do reťazca, popíš ich DH parametrami alebo vlastnými maticami 4×4 alebo importuj URDF a rieš priamu aj inverznú kinematiku naživo v 3D.',
       download: 'Stiahnuť pre {os}',
       downloadAll: 'Všetky súbory',
       github: 'Pozrieť na GitHube',
@@ -150,7 +151,7 @@ export const STRINGS = {
         ['code', 'red', 'Tvoje riešenie', 'Analytické riešenie napíšeš priamo v aplikácii. Každá vetva sa overí priamou kinematikou.'],
         ['shield', 'teal', 'Žiadne preskakovanie', 'Počas ťahania sa kĺby za snímok pohnú najviac o pár stupňov a nikdy nepreskočia na druhú konfiguráciu lakťa.'],
         ['jacobian', 'orange', 'Jakobián a singularity', 'Manipulovateľnosť, najmenšia singulárna hodnota, det J a varovanie, keď sa rameno blíži k singularite.'],
-        ['export', 'magenta', 'MATLAB a LaTeX', 'Export symbolickej FK a Jakobiánu do MATLABu, DH tabuľky do CSV alebo LaTeXu a matíc do MATLABu.'],
+        ['export', 'magenta', 'Dnu URDF, von MATLAB', 'Import robota zo súboru URDF aj s limitmi kĺbov. Export symbolickej FK a Jakobiánu do MATLABu, DH tabuľky do CSV alebo LaTeXu.'],
       ],
     },
     demos: {
@@ -183,7 +184,7 @@ export const STRINGS = {
       kicker: 'Ako to funguje',
       title: 'Od prázdneho reťazca k vyriešenej polohe',
       items: [
-        ['Postav', 'Vyber šablónu alebo začni od nuly a ťahaj diely zo Všetkých nástrojov do reťazca.'],
+        ['Postav', 'Vyber šablónu, importuj URDF alebo začni od nuly a ťahaj diely zo Všetkých nástrojov do reťazca.'],
         ['Popíš', 'Vyplň θ, d, a, α alebo zadaj maticu. Dĺžky daj do parametrov a meníš ich na jednom mieste.'],
         ['Rieš', 'Ťahaj cieľ, stlač Ctrl+Enter alebo spusti vlastné riešenie a porovnaj všetky vetvy.'],
         ['Exportuj', 'Ulož .robot.json alebo exportuj do MATLABu, CSV a LaTeXu do svojej správy.'],
@@ -225,6 +226,7 @@ export const STRINGS = {
         ['Môžem tým hýbať skutočným robotom?', 'Je to vzdelávací a návrhový nástroj. Použi ho na kontrolu výpočtov, nikdy ako jediný podklad na pohyb skutočného hardvéru.'],
         ['V škole používame modifikovanú (Craig) konvenciu.', 'Prepni ju hore v paneli Kinematický reťazec. DH tabuľka aj význam a a α sa prispôsobia.'],
         ['Mám iba matice, nie DH tabuľku.', 'Použi diely Maticový kĺb a zadaj každú Aᵢ s premennou q.'],
+        ['Viem načítať robota z ROS?', 'Áno, otvor .urdf cez Menu, Importovať URDF. Najdlhší pohyblivý reťazec sa prenesie ako elementárne transformácie aj s limitmi, chápadlo na konci sa vynechá. Meshe sa ignorujú a xacro treba najprv previesť na URDF.'],
         ['Je aj slovenská verzia?', 'Áno, celá aplikácia, inštalátor, README aj táto stránka sú po slovensky aj po anglicky.'],
       ],
     },
