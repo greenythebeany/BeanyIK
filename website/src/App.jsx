@@ -1,10 +1,46 @@
 import { useEffect, useMemo, useState } from 'react';
 import { LangContext, STRINGS, fill, initialLang } from './i18n.js';
 import Icon from './components/Icon.jsx';
-import ArmDemo from './components/ArmDemo.jsx';
 
 const REPO = 'https://github.com/greenythebeany/BeanyIK';
 const BASE = import.meta.env.BASE_URL;
+
+// the URDF samples bundled with the web version (website/app-samples).
+// photos are hotlinked from Wikimedia Commons under their free licenses,
+// robots without a free photo link to the maker instead
+const COMMONS = 'https://commons.wikimedia.org/wiki/';
+const SAMPLE_ROBOTS = [
+  { file: 'kuka_iiwa', name: 'LBR iiwa', maker: 'KUKA', dof: 7,
+    photo: { file: 'KUKA_LBR_iiwa.jpg', by: 'KUKA Laboratories GmbH', license: 'CC BY-SA 3.0' } },
+  { file: 'franka_panda', name: 'Panda', maker: 'Franka Emika', dof: 7,
+    photo: { file: 'Franka_Emika1.jpg', by: 'Ims', license: 'CC BY-SA 4.0' } },
+  { file: 'ur5', name: 'UR5', maker: 'Universal Robots', dof: 6,
+    photo: { file: 'UR16e_robot_arm.png', by: 'Wikimedia Commons', license: 'CC BY-SA 4.0', model: 'UR16e' } },
+  { file: 'xarm6', name: 'xArm 6', maker: 'UFACTORY', dof: 6, link: 'https://www.ufactory.us/product/ufactory-xarm-6' },
+  { file: 'kuka_lwr', name: 'LWR 4', maker: 'KUKA', dof: 7, link: 'https://qviro.com/product/kuka/lwr/specifications' },
+];
+
+function SamplePhoto({ robot, t }) {
+  const [failed, setFailed] = useState(false);
+  const p = robot.photo;
+  if (!p || failed) {
+    return (
+      <div className="sample-photo none">
+        <Icon name="chain" size={28} />
+        <span>{t.web.noPhoto}</span>
+        {robot.link && <a href={robot.link} target="_blank" rel="noopener noreferrer">{fill(t.web.seeMaker, { maker: robot.maker })}</a>}
+      </div>
+    );
+  }
+  return (
+    <div className="sample-photo">
+      <img src={`${COMMONS}Special:FilePath/${p.file}?width=640`} alt={`${robot.maker} ${p.model || robot.name}`} loading="lazy" onError={() => setFailed(true)} />
+      <a className="sample-credit" href={`${COMMONS}File:${p.file}`} target="_blank" rel="noopener noreferrer">
+        {p.model ? `${fill(t.web.photoOf, { model: p.model })} ` : ''}{t.web.photo}: {p.by}, {p.license}
+      </a>
+    </div>
+  );
+}
 
 const SHOTS = {
   light: [
@@ -38,7 +74,6 @@ const CACHE_KEY = 'beanyik_site_release';
 function fallbackRelease(version) {
   const names = [
     `BeanyIK-Setup-${version}.exe`, `BeanyIK-Portable-${version}.exe`,
-    `BeanyIK-${version}-mac-arm64.dmg`, `BeanyIK-${version}-mac-x64.dmg`,
   ];
   return {
     version,
@@ -141,9 +176,6 @@ export default function App() {
 
   const setup = findAsset(rel, /setup.*\.exe$/i);
   const portable = findAsset(rel, /portable.*\.exe$/i);
-  const macArm = findAsset(rel, /mac-arm64\.dmg$/i);
-  const macIntel = findAsset(rel, /mac-x64\.dmg$/i);
-  const primary = isMac ? (macArm || macIntel) : setup;
   const releasesUrl = rel?.url || `${REPO}/releases/latest`;
   const mb = (a) => (a?.size ? `${(a.size / 1048576).toFixed(0)} MB` : '');
   const nav = [['features', t.nav.features], ['demos', t.nav.demos], ['try', t.nav.try], ['screens', t.nav.screens], ['download', t.nav.download], ['faq', t.nav.faq]];
@@ -183,11 +215,15 @@ export default function App() {
               <h1>{t.hero.title}</h1>
               <p>{t.hero.text}</p>
               <div className="hero-actions">
-                <a className="btn btn-primary btn-lg" href={primary?.browser_download_url || releasesUrl}>
-                  <Icon name={isMac ? 'apple' : 'windows'} size={18} />
-                  {fill(t.hero.download, { os: isMac ? 'macOS' : 'Windows' })}
+                {/* no working mac build, so macs get the web version first */}
+                {isMac ? (
+                  <a className="btn btn-primary btn-lg web-only" href={`${BASE}app/`}><Icon name="play" size={18} />{t.hero.openWeb}</a>
+                ) : null}
+                <a className={`btn btn-lg ${isMac ? '' : 'btn-primary'}`} href={setup?.browser_download_url || releasesUrl}>
+                  <Icon name="windows" size={18} />
+                  {fill(t.hero.download, { os: 'Windows' })}
                 </a>
-                <a className="btn btn-lg web-only" href={`${BASE}app/`}><Icon name="play" size={18} />{t.hero.openWeb}</a>
+                {isMac ? null : <a className="btn btn-lg web-only" href={`${BASE}app/`}><Icon name="play" size={18} />{t.hero.openWeb}</a>}
                 <a className="btn btn-lg" href={REPO}><Icon name="github" size={18} />{t.hero.github}</a>
               </div>
               <div className="hero-meta">
@@ -237,15 +273,48 @@ export default function App() {
           </div>
         </Section>
 
-        <Section id="try" kicker={t.tryIt.kicker} title={t.tryIt.title} text={t.tryIt.text}>
-          <div className="web-launch reveal">
-            <a className="btn btn-primary btn-lg web-only" href={`${BASE}app/`}><Icon name="play" size={18} />{t.tryIt.open}</a>
-            <span className="web-only">{t.tryIt.note}</span>
-            <span className="phone-only">{t.tryIt.phone}</span>
+        <section id="try" className="section">
+          <div className="wrap">
+            <div className="web-hero">
+              <div className="section-head reveal">
+                <div className="kicker">{t.web.kicker}</div>
+                <h2>{t.web.title}</h2>
+                <p>{t.web.text}</p>
+                <div className="web-actions">
+                  <a className="btn btn-primary btn-lg web-only" href={`${BASE}app/`}><Icon name="play" size={18} />{t.web.open}</a>
+                  <small className="web-only">{t.web.note}</small>
+                  <p className="phone-only">{t.web.phone}</p>
+                </div>
+              </div>
+              <div className="window reveal">
+                <div className="window-bar">
+                  <img src={`${BASE}logo.png`} alt="" width="16" height="16" />
+                  <span className="window-tab">lbr_iiwa</span>
+                  <span className="window-dots"><i /><i /><i /></span>
+                </div>
+                <img className="window-shot" src={`${BASE}media/web-version.webp`} alt={t.web.shotAlt} width="1280" height="760" loading="lazy" />
+              </div>
+            </div>
+
+            <div className="samples-head reveal">
+              <h3>{t.web.samplesTitle}</h3>
+              <p>{t.web.samplesText}</p>
+            </div>
+            <div className="sample-grid">
+              {SAMPLE_ROBOTS.map((r) => (
+                <article key={r.file} className="card sample reveal">
+                  <SamplePhoto robot={r} t={t} />
+                  <div className="sample-body">
+                    <span className="sample-maker">{r.maker}</span>
+                    <h4>{r.name}</h4>
+                    <div className="sample-specs"><span className="pill">{fill(t.web.joints, { n: r.dof })}</span></div>
+                    <a className="btn" href={`${BASE}app/samples/${r.file}.urdf`} download><Icon name="download" size={16} />{t.web.download}</a>
+                  </div>
+                </article>
+              ))}
+            </div>
           </div>
-          <h3 className="mini-title reveal">{t.tryIt.mini}</h3>
-          <div className="reveal"><ArmDemo /></div>
-        </Section>
+        </section>
 
         <Section id="screens" kicker={t.screens.kicker} title={t.screens.title} className="alt">
           <div className="segmented reveal" role="tablist">
@@ -296,13 +365,12 @@ export default function App() {
               </a>
             </div>
             <div className="card platform reveal">
-              <div className="platform-head"><Icon name="apple" size={24} /><h3>{t.download.mac}</h3></div>
-              {[[macArm, t.download.macArm, t.download.macArmHint], [macIntel, t.download.macIntel, t.download.macIntelHint]].map(([a, name, hint]) => (
-                <a key={name} className={`dl ${a ? '' : 'soon'}`} href={a?.browser_download_url || releasesUrl}>
-                  <div><b>{name}</b><span>{a ? hint : t.download.soon}</span></div>
-                  <span className="dl-meta">{mb(a)}<Icon name="download" size={18} /></span>
-                </a>
-              ))}
+              <div className="platform-head"><Icon name="play" size={24} /><h3>{t.download.web}</h3></div>
+              <a className="dl web-only" href={`${BASE}app/`}>
+                <div><b>{t.download.webOpen}</b><span>{t.download.webHint}</span></div>
+                <span className="dl-meta"><Icon name="arrow" size={18} /></span>
+              </a>
+              <p className="phone-only">{t.web.phone}</p>
             </div>
           </div>
           <p className="note reveal">{t.download.smartscreen}</p>

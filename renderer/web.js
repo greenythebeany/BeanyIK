@@ -35,8 +35,8 @@
       el.className = 'web-phone';
       el.innerHTML = '<div><img src="logo.png" alt="" width="64" height="64"><h1>'
         + (sk ? 'BeanyIK potrebuje počítač' : 'BeanyIK needs a computer')
-        + '</h1><p>' + (sk ? 'Webovú verziu otvor na počítači alebo si stiahni aplikáciu pre Windows alebo macOS.'
-          : 'Open the web version on a computer, or download the app for Windows or macOS.')
+        + '</h1><p>' + (sk ? 'Webovú verziu otvor na počítači alebo si stiahni aplikáciu pre Windows.'
+          : 'Open the web version on a computer, or download the app for Windows.')
         + '</p><a href="../">' + (sk ? 'Späť na stránku' : 'Back to the website') + '</a></div>';
       document.body.appendChild(el);
     });
