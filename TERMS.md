@@ -66,9 +66,8 @@ OR PERSONS, ARISING FROM THE USE OF THE APP OR OF RESULTS PRODUCED WITH IT.
 
 ## 6. Unsigned builds
 
-Windows and macOS builds are not code-signed, so Windows SmartScreen may warn on
-first launch ("Windows protected your PC"). Click *More info*, then *Run anyway*. On
-macOS, allow it once in *System Settings*, *Privacy & Security*, *Open Anyway*. Only download
+Windows builds are not code-signed, so Windows SmartScreen may warn on first launch
+("Windows protected your PC"). Click *More info*, then *Run anyway*. Only download
 BeanyIK from the official GitHub releases page linked above.
 
 ## 7. Changes

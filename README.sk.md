@@ -13,7 +13,7 @@
 <p align="center">
   <a href="https://github.com/greenythebeany/BeanyIK/releases/latest"><img src="https://img.shields.io/github/v/release/greenythebeany/BeanyIK?label=verzia&color=1473e6" alt="Najnovšia verzia"></a>
   <a href="https://github.com/greenythebeany/BeanyIK/releases"><img src="https://img.shields.io/github/downloads/greenythebeany/BeanyIK/total?label=stiahnut%C3%A9&color=2d9d78" alt="Stiahnutia"></a>
-  <img src="https://img.shields.io/badge/platforma-Windows%20%7C%20macOS-555" alt="Windows a macOS">
+  <img src="https://img.shields.io/badge/platforma-Windows%20%7C%20web-555" alt="Windows a web">
   <a href="LICENSE"><img src="https://img.shields.io/badge/licencia-MIT-a3e635" alt="Licencia MIT"></a>
 </p>
 
@@ -162,23 +162,10 @@ Stiahni z [najnovšieho vydania](https://github.com/greenythebeany/BeanyIK/relea
 Zostavenia nie sú digitálne podpísané, preto Windows SmartScreen pri prvom spustení môže zobraziť
 *„Systém Windows ochránil váš počítač“*. Klikni na **Ďalšie informácie** a potom **Spustiť aj tak**.
 
-### macOS
+### Web
 
-Stiahni **`BeanyIK-x.y.z-mac-arm64.dmg`** pre Apple Silicon (M1 a novšie) alebo **`-mac-x64.dmg`** pre Macy s Intelom,
-otvor ho a presuň BeanyIK do Aplikácií. Aplikácia nie je notarizovaná Applom (na to treba platený vývojársky účet),
-preto prvé spustenie vyžaduje jeden krok navyše:
-
-1. Otvor BeanyIK. macOS napíše, že aplikáciu nevie overiť. Klikni na **Hotovo**.
-2. Otvor **Systémové nastavenia**, **Súkromie a bezpečnosť**, posuň sa nižšie a pri BeanyIK klikni na **Aj tak otvoriť**.
-3. Potvrď heslom. Odvtedy sa otvára normálne.
-
-Alebo naraz v Termináli:
-
-```bash
-xattr -dr com.apple.quarantine /Applications/BeanyIK.app
-```
-
-> BeanyIK 1.2.0 pre Mac mal poškodený podpis a macOS ho označil ako malvér. Použi **1.2.1 alebo novší**.
+Bez inštalácie: otvor [webovú verziu](https://greenythebeany.github.io/BeanyIK/app/) na ľubovoľnom počítači.
+Ukladanie a export sú tam vypnuté, všetko ostatné funguje.
 
 ### Zo zdrojového kódu
 
@@ -235,7 +222,7 @@ Stlač **Otestovať na aktuálnej polohe**, alebo **Analyticky** v paneli IK a k
 
 ## Klávesové skratky
 
-Celý zoznam otvoríš v aplikácii klávesom **F1**. Na macOS použi Cmd namiesto Ctrl.
+Celý zoznam otvoríš v aplikácii klávesom **F1**.
 
 | Kláves | Akcia |
 | --- | --- |
@@ -269,7 +256,6 @@ Ak áno, okno ukáže novinky a tri možnosti:
 - **Neskôr** sa spýta nabudúce.
 - **Preskočiť túto verziu** mlčí až do ďalšej verzie.
 
-Na macOS okno odkáže na stránku na stiahnutie, pretože nepodpísaná aplikácia sa nemôže bezpečne nahradiť sama.
 
 ## Časté otázky
 
@@ -295,7 +281,6 @@ nikdy nepreskočilo do inej konfigurácie, presne ako hardvér.
 npm start          # spustenie aplikácie
 npm test           # test kinematiky, dráh ukážok a test proti preskakovaniu
 npm run dist       # inštalátor a prenosná verzia pre Windows do dist/
-npm run dist:mac   # dmg a zip pre macOS (na Macu)
 npm run vendor     # skopíruje three.js z node_modules do renderer/vendor
 ```
 
@@ -303,7 +288,7 @@ Jadro kinematiky v `renderer/js/core` sú čisté ES moduly bez DOM, takže test
 Texty rozhrania sú v `renderer/js/i18n.js`, kľúčom je anglický text, nový jazyk je teda jeden slovník navyše.
 
 **Vydanie.** Zvýš verziu v `package.json` a pushni tag, napríklad `v1.2.0`. Workflow zostaví súbory pre Windows
-aj macOS a priloží ich spolu s `latest.yml` pre aktualizátor k vydaniu na GitHube.
+a priloží ich spolu s `latest.yml` pre aktualizátor k vydaniu na GitHube.
 
 **Webstránka.** Stránka v priečinku `website/` je React aplikácia (Vite), ktorú workflow pri každom pushi do main
 nasadí na GitHub Pages.

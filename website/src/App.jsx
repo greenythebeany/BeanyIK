@@ -140,7 +140,6 @@ function useReveal() {
   });
 }
 
-const isMac = typeof navigator !== 'undefined' && /Mac/.test(navigator.platform || navigator.userAgent);
 
 function Section({ id, kicker, title, text, children, className = '' }) {
   return (
@@ -223,15 +222,11 @@ export default function App() {
               <h1>{t.hero.title}</h1>
               <p>{t.hero.text}</p>
               <div className="hero-actions">
-                {/* no working mac build, so macs get the web version first */}
-                {isMac ? (
-                  <a className="btn btn-primary btn-lg web-only" href={`${BASE}app/`}><Icon name="play" size={18} />{t.hero.openWeb}</a>
-                ) : null}
-                <a className={`btn btn-lg ${isMac ? '' : 'btn-primary'}`} href={setup?.browser_download_url || releasesUrl}>
+                <a className="btn btn-primary btn-lg" href={setup?.browser_download_url || releasesUrl}>
                   <Icon name="windows" size={18} />
                   {fill(t.hero.download, { os: 'Windows' })}
                 </a>
-                {isMac ? null : <a className="btn btn-lg web-only" href={`${BASE}app/`}><Icon name="play" size={18} />{t.hero.openWeb}</a>}
+                <a className="btn btn-lg web-only" href={`${BASE}app/`}><Icon name="play" size={18} />{t.hero.openWeb}</a>
                 <a className="btn btn-lg" href={REPO}><Icon name="github" size={18} />{t.hero.github}</a>
               </div>
               <div className="hero-meta">

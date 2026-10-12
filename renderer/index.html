@@ -11,7 +11,6 @@
     if (theme === 'system') theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
     document.documentElement.dataset.theme = theme;
   } catch (e) { document.documentElement.dataset.theme = 'light'; }
-  if (/Mac/.test(navigator.platform)) document.documentElement.classList.add('mac');
 })();
 </script>
 <script type="importmap">
