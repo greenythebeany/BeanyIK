@@ -132,16 +132,19 @@ function pickChain(joints, warnings) {
   // mimic fingers count here, a two finger gripper often has one
   const anyMoving = (j) => j.kind !== 'fixed' || (byParent.get(j.child) || []).some(anyMoving);
   const movingBelow = (link) => (byParent.get(link) || []).filter(anyMoving).length;
+  let gripper = 0;
   for (let i = path.length - 1; i > 0; i--) {
     if (movingBelow(path[i].parent) < 2) continue;
     const after = path.slice(i).filter(counts).length;
     if (after <= 2 && path.slice(0, i).some(counts)) {
       warnings.push(`Gripper at ${path[i].parent} left out`);
+      const under = (link) => (byParent.get(link) || []).reduce((n, j) => n + counts(j) + under(j.child), 0);
+      gripper = under(path[i].parent);
       path = path.slice(0, i);
     }
     break;
   }
-  const others = joints.filter(counts).length - path.filter(counts).length;
+  const others = joints.filter(counts).length - path.filter(counts).length - gripper;
   if (others > 0) warnings.push(`${others} joint(s) on other branches left out`);
   return { root: roots[0], tip: path.at(-1)?.child ?? roots[0], path };
 }
