@@ -132,6 +132,8 @@ Každá šablóna po otvorení prehrá ukážku. Plánovaná dráha je čiarkova
 **Ďalšie**
 
 - **Animované ukážky** pre každú šablónu a prechod kĺbmi pre tvoje roboty (`Ctrl+P`).
+- **Import URDF** (Menu, Importovať URDF…, alebo jednoducho otvor `.urdf`). Najdlhší pohyblivý reťazec sa prenesie
+  ako elementárne transformácie aj s limitmi kĺbov, chápadlo na konci sa vynechá. Meshe sa ignorujú, xacro treba najprv previesť.
 - **Export** symbolickej FK a Jakobiánu do MATLABu (`.m`, Symbolic Math Toolbox), DH tabuľky do CSV alebo LaTeXu
   a ktorejkoľvek matice do MATLABu.
 - **Karty** ako dokumenty v Acrobate. Každá si pamätá polohu, históriu zmien, IK cieľ aj kameru a po reštarte sa vrátia.

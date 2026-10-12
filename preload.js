@@ -15,7 +15,7 @@ contextBridge.exposeInMainWorld('api', {
   onUpdateAvailable: (cb) => ipcRenderer.on('update:available', (e, info) => cb(info)),
   openExternal: (url) => ipcRenderer.send('shell:openExternal', url),
 
-  openRobot: () => ipcRenderer.invoke('file:open'),
+  openRobot: (kind) => ipcRenderer.invoke('file:open', kind),
   readRobot: (filePath) => ipcRenderer.invoke('file:read', filePath),
   saveRobot: (payload) => ipcRenderer.invoke('file:save', payload),
   exportText: (payload) => ipcRenderer.invoke('file:export', payload),

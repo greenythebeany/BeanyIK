@@ -158,6 +158,8 @@ ipcMain.on('shell:openExternal', (e, url) => {
 
 // files
 const ROBOT_FILTERS = [{ name: 'BeanyIK robot', extensions: ['robot.json', 'json'] }];
+const URDF_FILTERS = [{ name: 'URDF', extensions: ['urdf', 'xml'] }];
+const OPEN_FILTERS = [{ name: 'Robot files', extensions: ['json', 'urdf', 'xml'] }, ...ROBOT_FILTERS, ...URDF_FILTERS];
 
 // Documents\BeanyIK, so the dialogs don't open in some random folder
 function robotsDir() {
@@ -166,8 +168,9 @@ function robotsDir() {
   return dir;
 }
 
-ipcMain.handle('file:open', async () => {
-  const res = await dialog.showOpenDialog(mainWindow, { defaultPath: robotsDir(), properties: ['openFile'], filters: ROBOT_FILTERS });
+ipcMain.handle('file:open', async (e, kind) => {
+  const filters = kind === 'urdf' ? URDF_FILTERS : OPEN_FILTERS;
+  const res = await dialog.showOpenDialog(mainWindow, { defaultPath: robotsDir(), properties: ['openFile'], filters });
   if (res.canceled || !res.filePaths[0]) return null;
   const filePath = res.filePaths[0];
   return { filePath, content: fs.readFileSync(filePath, 'utf8') };

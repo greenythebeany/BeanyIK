@@ -8,6 +8,7 @@ import { PRESETS, blankRobot } from './core/presets.js';
 import { demoFor, hasPathDemo, samplePath } from './core/demos.js';
 import { toMatlab, dhTableCSV, dhTableLatex, matrixToText, matrixToMatlab } from './core/export.js';
 import { FUNCTION_NAMES } from './core/expr.js';
+import { urdfToRobot } from './core/urdf.js';
 import { icon, glyph, hydrateIcons } from './icons.js';
 import { Viewport } from './viewport.js';
 import { t, getLang, setLang, translateStatic } from './i18n.js';
@@ -1356,6 +1357,7 @@ function renderHome() {
           <div class="row" style="justify-content:flex-start;flex-wrap:wrap">
             <button class="btn btn-primary" data-home="new" style="flex:0">${icon('plus')}${t('New robot')}</button>
             <button class="btn" data-home="open" style="flex:0">${icon('folder')}${t('Open file')}</button>
+            <button class="btn" data-home="urdf" style="flex:0">${icon('folder')}${t('Import URDF')}</button>
             ${resumeList.length && !docs.length ? `<button class="btn" data-home="resume" style="flex:0">${icon('play')}${resumeList.length === 1 ? t('Continue “{name}”', { name: esc(resumeList[0].robot.name) }) : t('Reopen {n} robots', { n: resumeList.length })}</button>` : ''}
           </div>
         </div>
@@ -1402,7 +1404,19 @@ function serialize() {
   return JSON.stringify({ ...state.robot, pose: q }, null, 2);
 }
 
+// a urdf opens as a new unsaved robot, save turns it into a .robot.json
+function loadURDF(text, filePath) {
+  let res;
+  try { res = urdfToRobot(text); } catch (e) { toast(t("Can't import URDF: {err}", { err: e.message }), 'err'); return; }
+  openRobot(res.robot, { dirty: true });
+  openPanel('chain');
+  const name = filePath ? filePath.split(/[\\/]/).pop() : res.robot.name;
+  toast(t('Imported {name}, {n} moving joints ({root} → {tip})', { name, n: state.prep.dof, root: res.root, tip: res.tip }), 'ok');
+  if (res.warnings.length) setTimeout(() => toast(res.warnings.join('. '), 'info'), 600);
+}
+
 function loadFromText(text, filePath) {
+  if (/^\s*</.test(text)) return loadURDF(text, filePath);
   let data;
   try { data = JSON.parse(text); } catch (e) { toast(t('Not a valid robot file'), 'err'); return; }
   if (!Array.isArray(data.joints)) { toast(t('Not a BeanyIK robot file'), 'err'); return; }
@@ -1417,6 +1431,11 @@ function loadFromText(text, filePath) {
 async function openFile() {
   const res = await window.api.openRobot();
   if (res) loadFromText(res.content, res.filePath);
+}
+
+async function importURDF() {
+  const res = await window.api.openRobot('urdf');
+  if (res) loadURDF(res.content, res.filePath);
 }
 
 async function save(saveAs = false) {
@@ -1456,6 +1475,7 @@ function toggleMenu(show) {
   m.innerHTML = `
     ${item('new', 'plus', 'New robot', 'Ctrl+T')}
     ${item('open', 'folder', 'Open…', 'Ctrl+O')}
+    ${item('urdf', 'folder', 'Import URDF…')}
     ${item('save', 'save', 'Save', 'Ctrl+S', doc)}
     ${item('saveas', 'save', 'Save as…', 'Ctrl+Shift+S', doc)}
     ${item('close', 'close', 'Close tab', 'Ctrl+W', doc)}
@@ -1594,7 +1614,7 @@ function wireEvents() {
     if (!it) return;
     toggleMenu(false);
     ({
-      new: newRobot, open: openFile, save: () => save(), saveas: () => save(true), theme: toggleTheme, home: () => showView('home'),
+      new: newRobot, open: openFile, urdf: importURDF, save: () => save(), saveas: () => save(true), theme: toggleTheme, home: () => showView('home'),
       lang: () => switchLanguage(getLang() === 'sk' ? 'en' : 'sk'),
       close: () => closeDoc(),
       keys: () => toggleShortcuts(true),
@@ -1619,6 +1639,7 @@ function wireEvents() {
     const act = el.dataset.home;
     if (act === 'new') newRobot();
     if (act === 'open') openFile();
+    if (act === 'urdf') importURDF();
     if (act === 'resume') {
       restoreSession();
     }
