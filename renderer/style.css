@@ -622,6 +622,3 @@ kbd {
 .about-section a { color: var(--accent); text-decoration: none; cursor: pointer; }
 .about-section a:hover { text-decoration: underline; }
 
-/* macOS: native traffic lights sit top left, so hide ours and make room */
-.mac .win-buttons { display: none; }
-.mac .appbar { padding-left: 84px; padding-right: 12px; }

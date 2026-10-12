@@ -13,7 +13,7 @@
 <p align="center">
   <a href="https://github.com/greenythebeany/BeanyIK/releases/latest"><img src="https://img.shields.io/github/v/release/greenythebeany/BeanyIK?label=release&color=1473e6" alt="Latest release"></a>
   <a href="https://github.com/greenythebeany/BeanyIK/releases"><img src="https://img.shields.io/github/downloads/greenythebeany/BeanyIK/total?color=2d9d78" alt="Downloads"></a>
-  <img src="https://img.shields.io/badge/platform-Windows%20%7C%20macOS-555" alt="Windows and macOS">
+  <img src="https://img.shields.io/badge/platform-Windows%20%7C%20web-555" alt="Windows and web">
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-a3e635" alt="MIT license"></a>
 </p>
 
@@ -166,23 +166,10 @@ Download from the [latest release](https://github.com/greenythebeany/BeanyIK/rel
 The builds aren't code-signed, so the first time Windows SmartScreen may say *"Windows protected your PC"*.
 Click **More info**, then **Run anyway**.
 
-### macOS
+### Web
 
-Download **`BeanyIK-x.y.z-mac-arm64.dmg`** for Apple Silicon (M1 and newer) or **`-mac-x64.dmg`** for Intel Macs, open it and
-drag BeanyIK to Applications. The app isn't notarized by Apple (that needs a paid developer account), so the
-first launch takes one extra step:
-
-1. Open BeanyIK. macOS says it can't verify the app. Click **Done**.
-2. Open **System Settings**, **Privacy & Security**, scroll down and click **Open Anyway** next to BeanyIK.
-3. Confirm with your password. From then on it opens normally.
-
-Or do it in one go in Terminal:
-
-```bash
-xattr -dr com.apple.quarantine /Applications/BeanyIK.app
-```
-
-> BeanyIK 1.2.0 for Mac had a broken signature and macOS reported it as malware. Use **1.2.1 or newer**.
+No install at all: open the [web version](https://greenythebeany.github.io/BeanyIK/app/) on any computer. Saving and
+exporting are turned off there, everything else works.
 
 ### From source
 
@@ -240,7 +227,7 @@ Press **Test on current pose**, or **Analytic** in the IK panel to solve for the
 
 ## Keyboard shortcuts
 
-Press **F1** in the app for the full list. On macOS use Cmd instead of Ctrl.
+Press **F1** in the app for the full list.
 
 | Key | Action |
 | --- | --- |
@@ -274,7 +261,6 @@ When there is one, a dialog shows what's new with three choices:
 - **Later** asks again next time.
 - **Skip this version** stays quiet until the version after it.
 
-On macOS the dialog links to the download page, because unsigned Mac apps can't safely replace themselves.
 
 ## FAQ
 
@@ -300,7 +286,6 @@ the arm never snaps into another configuration, just like hardware.
 npm start          # run the app
 npm test           # kinematics self test, demo paths and the no-flicker stress test
 npm run dist       # Windows installer and portable exe into dist/
-npm run dist:mac   # macOS dmg and zip (on a Mac)
 npm run vendor     # copy three.js from node_modules into renderer/vendor
 ```
 
@@ -308,7 +293,7 @@ The kinematics core in `renderer/js/core` is plain ES modules with no DOM, so th
 UI text lives in `renderer/js/i18n.js` with the English string as the key, so a new language is one more dictionary.
 
 **Releasing.** Bump the version in `package.json`, then push a tag like `v1.2.0`. The release workflow builds the
-Windows and macOS files and attaches them, with `latest.yml` for the updater, to the GitHub release.
+Windows files and attaches them, with `latest.yml` for the updater, to the GitHub release.
 
 **Website.** The site in `website/` is a React app (Vite) deployed to GitHub Pages by the pages workflow on every push to main.
 

@@ -1,10 +1,54 @@
 import { useEffect, useMemo, useState } from 'react';
 import { LangContext, STRINGS, fill, initialLang } from './i18n.js';
 import Icon from './components/Icon.jsx';
-import ArmDemo from './components/ArmDemo.jsx';
 
 const REPO = 'https://github.com/greenythebeany/BeanyIK';
 const BASE = import.meta.env.BASE_URL;
+
+// the URDF samples bundled with the web version (website/app-samples).
+// photos are freely licensed (Wikimedia Commons), cropped to 800x600 and kept
+// in public/robots. robots without a free photo link to the maker instead
+const SAMPLE_ROBOTS = [
+  { file: 'kuka_iiwa', name: 'LBR iiwa', maker: 'KUKA', dof: 7,
+    photo: {
+      src: 'robots/kuka_iiwa.webp', by: 'DLR German Aerospace Center', license: 'CC BY 2.0',
+      page: 'https://commons.wikimedia.org/wiki/File:Leichtbauroboter_-_Lightweight_robots_(14235555984).jpg',
+    } },
+  { file: 'franka_panda', name: 'Panda', maker: 'Franka Emika', dof: 7,
+    photo: {
+      src: 'robots/franka_panda.webp', by: 'Ims', license: 'CC BY-SA 4.0',
+      page: 'https://commons.wikimedia.org/wiki/File:Franka_Emika1.jpg',
+    } },
+  { file: 'ur5', name: 'UR5', maker: 'Universal Robots', dof: 6,
+    photo: {
+      src: 'robots/ur5.webp', by: 'GrowSkills Robotics', license: 'CC BY-SA 4.0',
+      page: 'https://commons.wikimedia.org/wiki/File:Cobot.jpg',
+    } },
+  { file: 'xarm6', name: 'xArm 6', maker: 'UFACTORY', dof: 6, link: 'https://www.ufactory.us/product/ufactory-xarm-6' },
+  { file: 'kuka_lwr', name: 'LWR 4', maker: 'KUKA', dof: 7, link: 'https://qviro.com/product/kuka/lwr/specifications' },
+];
+
+function SamplePhoto({ robot, t }) {
+  const [failed, setFailed] = useState(false);
+  const p = robot.photo;
+  if (!p || failed) {
+    return (
+      <div className="sample-photo none">
+        <Icon name="chain" size={28} />
+        <span>{t.web.noPhoto}</span>
+        {robot.link && <a href={robot.link} target="_blank" rel="noopener noreferrer">{fill(t.web.seeMaker, { maker: robot.maker })}</a>}
+      </div>
+    );
+  }
+  return (
+    <div className="sample-photo">
+      <img src={`${BASE}${p.src}`} alt={`${robot.maker} ${robot.name}`} loading="lazy" width="800" height="600" onError={() => setFailed(true)} />
+      <a className="sample-credit" href={p.page} target="_blank" rel="noopener noreferrer">
+        {t.web.photo}: {p.by}, {p.license}
+      </a>
+    </div>
+  );
+}
 
 const SHOTS = {
   light: [
@@ -38,7 +82,6 @@ const CACHE_KEY = 'beanyik_site_release';
 function fallbackRelease(version) {
   const names = [
     `BeanyIK-Setup-${version}.exe`, `BeanyIK-Portable-${version}.exe`,
-    `BeanyIK-${version}-mac-arm64.dmg`, `BeanyIK-${version}-mac-x64.dmg`,
   ];
   return {
     version,
@@ -97,7 +140,6 @@ function useReveal() {
   });
 }
 
-const isMac = typeof navigator !== 'undefined' && /Mac/.test(navigator.platform || navigator.userAgent);
 
 function Section({ id, kicker, title, text, children, className = '' }) {
   return (
@@ -141,12 +183,9 @@ export default function App() {
 
   const setup = findAsset(rel, /setup.*\.exe$/i);
   const portable = findAsset(rel, /portable.*\.exe$/i);
-  const macArm = findAsset(rel, /mac-arm64\.dmg$/i);
-  const macIntel = findAsset(rel, /mac-x64\.dmg$/i);
-  const primary = isMac ? (macArm || macIntel) : setup;
   const releasesUrl = rel?.url || `${REPO}/releases/latest`;
   const mb = (a) => (a?.size ? `${(a.size / 1048576).toFixed(0)} MB` : '');
-  const nav = [['features', t.nav.features], ['demos', t.nav.demos], ['try', t.nav.try], ['screens', t.nav.screens], ['download', t.nav.download], ['faq', t.nav.faq]];
+  const nav = [['features', t.nav.features], ['demos', t.nav.demos], ['robots', t.nav.robots], ['screens', t.nav.screens], ['download', t.nav.download], ['faq', t.nav.faq]];
   const ctx = useMemo(() => ({ lang, t, setLang }), [lang, t]);
 
   return (
@@ -183,9 +222,9 @@ export default function App() {
               <h1>{t.hero.title}</h1>
               <p>{t.hero.text}</p>
               <div className="hero-actions">
-                <a className="btn btn-primary btn-lg" href={primary?.browser_download_url || releasesUrl}>
-                  <Icon name={isMac ? 'apple' : 'windows'} size={18} />
-                  {fill(t.hero.download, { os: isMac ? 'macOS' : 'Windows' })}
+                <a className="btn btn-primary btn-lg" href={setup?.browser_download_url || releasesUrl}>
+                  <Icon name="windows" size={18} />
+                  {fill(t.hero.download, { os: 'Windows' })}
                 </a>
                 <a className="btn btn-lg web-only" href={`${BASE}app/`}><Icon name="play" size={18} />{t.hero.openWeb}</a>
                 <a className="btn btn-lg" href={REPO}><Icon name="github" size={18} />{t.hero.github}</a>
@@ -237,14 +276,20 @@ export default function App() {
           </div>
         </Section>
 
-        <Section id="try" kicker={t.tryIt.kicker} title={t.tryIt.title} text={t.tryIt.text}>
-          <div className="web-launch reveal">
-            <a className="btn btn-primary btn-lg web-only" href={`${BASE}app/`}><Icon name="play" size={18} />{t.tryIt.open}</a>
-            <span className="web-only">{t.tryIt.note}</span>
-            <span className="phone-only">{t.tryIt.phone}</span>
+        <Section id="robots" kicker={t.web.samplesKicker} title={t.web.samplesTitle} text={t.web.samplesText}>
+          <div className="sample-grid">
+            {SAMPLE_ROBOTS.map((r) => (
+              <article key={r.file} className="card sample reveal">
+                <SamplePhoto robot={r} t={t} />
+                <div className="sample-body">
+                  <span className="sample-maker">{r.maker}</span>
+                  <h4>{r.name}</h4>
+                  <div className="sample-specs"><span className="pill">{fill(t.web.joints, { n: r.dof })}</span></div>
+                  <a className="btn" href={`${BASE}app/samples/${r.file}.urdf`} download><Icon name="download" size={16} />{t.web.download}</a>
+                </div>
+              </article>
+            ))}
           </div>
-          <h3 className="mini-title reveal">{t.tryIt.mini}</h3>
-          <div className="reveal"><ArmDemo /></div>
         </Section>
 
         <Section id="screens" kicker={t.screens.kicker} title={t.screens.title} className="alt">
@@ -296,13 +341,12 @@ export default function App() {
               </a>
             </div>
             <div className="card platform reveal">
-              <div className="platform-head"><Icon name="apple" size={24} /><h3>{t.download.mac}</h3></div>
-              {[[macArm, t.download.macArm, t.download.macArmHint], [macIntel, t.download.macIntel, t.download.macIntelHint]].map(([a, name, hint]) => (
-                <a key={name} className={`dl ${a ? '' : 'soon'}`} href={a?.browser_download_url || releasesUrl}>
-                  <div><b>{name}</b><span>{a ? hint : t.download.soon}</span></div>
-                  <span className="dl-meta">{mb(a)}<Icon name="download" size={18} /></span>
-                </a>
-              ))}
+              <div className="platform-head"><Icon name="play" size={24} /><h3>{t.download.web}</h3></div>
+              <a className="dl web-only" href={`${BASE}app/`}>
+                <div><b>{t.download.webOpen}</b><span>{t.download.webHint}</span></div>
+                <span className="dl-meta"><Icon name="arrow" size={18} /></span>
+              </a>
+              <p className="phone-only">{t.web.phone}</p>
             </div>
           </div>
           <p className="note reveal">{t.download.smartscreen}</p>

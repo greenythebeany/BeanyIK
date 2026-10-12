@@ -41,7 +41,7 @@ async function checkForUpdates() {
   if (!latest || !current || !isNewer(latest, current)) return { status: 'up-to-date', current: currentVersion() };
 
   const assets = release.assets || [];
-  // windows can update in place, mac/linux just get the download page
+  // windows updates in place, anything else gets the download page
   const want = isPortable() ? /portable.*\.exe$/i : /setup.*\.exe$/i;
   const asset = process.platform === 'win32' ? assets.find((a) => want.test(a.name)) : null;
   const yml = assets.find((a) => a.name === 'latest.yml');

@@ -19,10 +19,7 @@ function createWindow() {
     height: 900,
     minWidth: 1100,
     minHeight: 640,
-    // mac keeps its traffic lights, windows/linux get our own buttons
-    ...(process.platform === 'darwin'
-      ? { titleBarStyle: 'hiddenInset', trafficLightPosition: { x: 14, y: 16 } }
-      : { frame: false }),
+    frame: false,
     show: false,
     backgroundColor: '#f3f3f3',
     icon: path.join(__dirname, 'icon.png'),
@@ -82,17 +79,8 @@ app.whenReady().then(() => {
     return net.fetch(pathToFileURL(filePath).toString());
   });
 
-  // default menu eats Ctrl+W / Ctrl+R, we use those ourselves. mac needs a
-  // menu for Cmd+Q, copy/paste etc, so it gets a minimal one there
-  if (process.platform === 'darwin') {
-    Menu.setApplicationMenu(Menu.buildFromTemplate([
-      { role: 'appMenu' },
-      { role: 'editMenu' },
-      { label: 'Window', submenu: [{ role: 'minimize' }, { role: 'zoom' }, { type: 'separator' }, { role: 'front' }] },
-    ]));
-  } else {
-    Menu.setApplicationMenu(null);
-  }
+  // default menu eats Ctrl+W / Ctrl+R, we use those ourselves
+  Menu.setApplicationMenu(null);
   createWindow();
 
   // check github for a newer release, stay quiet otherwise
@@ -111,7 +99,7 @@ app.whenReady().then(() => {
 });
 
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') app.quit();
+  app.quit();
 });
 
 // window controls
