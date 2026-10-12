@@ -135,6 +135,8 @@ Every template plays a demo when you open it. The planned path is dashed and the
 **Everything else**
 
 - **Demo animations** for every template, and a joint sweep for your own robots (`Ctrl+P`).
+- **Import URDF** (Menu, Import URDF…, or just open a `.urdf`). The longest moving chain comes over as elementary
+  transforms with its joint limits, a gripper at the tip is left out. Meshes are ignored, xacro needs converting first.
 - **Export** symbolic FK and the Jacobian to MATLAB (`.m`, Symbolic Math Toolbox), the DH table to CSV or LaTeX,
   and any matrix to MATLAB.
 - **Tabs** like documents in Acrobat. Each tab keeps its pose, undo history, IK target and camera, and your tabs

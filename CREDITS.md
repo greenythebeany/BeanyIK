@@ -57,3 +57,17 @@ The conventions follow the standard robotics literature:
   least squares IK.
 - T. Yoshikawa, *Manipulability of robotic mechanisms*, IJRR, 1985: the
   manipulability measure.
+
+## URDF samples (web version)
+
+The web version lists five robots to try the URDF import with
+(`website/app-samples/`). Only the kinematics are used, the meshes they point to
+are not included. Each file keeps the license of the project it comes from:
+
+| File | Source |
+| --- | --- |
+| `ur5.urdf` | Universal Robots UR5, generated from [ros-industrial/universal_robot](https://github.com/ros-industrial/universal_robot), via [urdf_files_dataset](https://github.com/Daniella1/urdf_files_dataset) |
+| `kuka_iiwa.urdf` | KUKA LBR iiwa, from the [pybullet data](https://github.com/bulletphysics/bullet3/tree/master/data/kuka_iiwa) in bullet3 |
+| `kuka_lwr.urdf` | KUKA LWR, from the [pybullet data](https://github.com/bulletphysics/bullet3/tree/master/data/kuka_lwr) in bullet3 |
+| `franka_panda.urdf` | Franka Emika Panda, from the [pybullet data](https://github.com/bulletphysics/bullet3/tree/master/examples/pybullet/gym/pybullet_data/franka_panda) in bullet3 |
+| `xarm6.urdf` | UFACTORY xArm6, from the [pybullet data](https://github.com/bulletphysics/bullet3/tree/master/examples/pybullet/gym/pybullet_data/xarm) in bullet3 |

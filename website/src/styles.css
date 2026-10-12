@@ -290,3 +290,12 @@ kbd { font-family: var(--font); font-size: 12px; font-weight: 700; min-width: 24
   .segmented button { flex: 1; padding: 8px 6px; }
   .footer nav { margin-left: 0; }
 }
+
+/* web version launch, phones get a note instead */
+.web-launch { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; margin-bottom: 40px; color: var(--text-2); }
+.mini-title { font-size: 17px; font-weight: 700; margin: 0 0 14px; }
+.phone-only { display: none; }
+@media (pointer: coarse) and (max-width: 900px) {
+  .web-only { display: none !important; }
+  .phone-only { display: block; }
+}
