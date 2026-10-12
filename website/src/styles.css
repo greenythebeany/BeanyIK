@@ -276,8 +276,8 @@ kbd { font-family: var(--font); font-size: 12px; font-weight: 700; min-width: 24
 .sample-specs { display: flex; gap: 6px; flex-wrap: wrap; margin: 6px 0 12px; }
 .sample-body .btn { margin-top: auto; justify-content: center; }
 .sample-credit {
-  position: absolute; left: 0; right: 0; bottom: 0; padding: 18px 10px 6px; font-size: 10.5px; line-height: 1.35;
-  color: #fff; text-decoration: none; background: linear-gradient(transparent, rgba(0, 0, 0, 0.62));
+  position: absolute; left: 0; right: 0; bottom: 0; padding: 5px 10px; font-size: 10.5px; line-height: 1.35;
+  color: #fff; text-decoration: none; background: rgba(16, 20, 27, 0.72);
 }
 .sample-credit:hover { text-decoration: underline; }
 .phone-only { display: none; }

@@ -71,3 +71,18 @@ are not included. Each file keeps the license of the project it comes from:
 | `kuka_lwr.urdf` | KUKA LWR, from the [pybullet data](https://github.com/bulletphysics/bullet3/tree/master/data/kuka_lwr) in bullet3 |
 | `franka_panda.urdf` | Franka Emika Panda, from the [pybullet data](https://github.com/bulletphysics/bullet3/tree/master/examples/pybullet/gym/pybullet_data/franka_panda) in bullet3 |
 | `xarm6.urdf` | UFACTORY xArm6, from the [pybullet data](https://github.com/bulletphysics/bullet3/tree/master/examples/pybullet/gym/pybullet_data/xarm) in bullet3 |
+
+### Robot photos on the website
+
+The sample cards on the website show freely licensed photos from Wikimedia Commons, cropped to
+800×600 and saved as WebP in `website/public/robots/`. The crops are adaptations under the same
+license as the original.
+
+| Website file | Robot | Author | License | Source |
+| --- | --- | --- | --- | --- |
+| `robots/kuka_iiwa.webp` | KUKA LBR iiwa (DLR stand at ILA 2014) | DLR German Aerospace Center | [CC BY 2.0](https://creativecommons.org/licenses/by/2.0/) | [Leichtbauroboter - Lightweight robots (14235555984).jpg](https://commons.wikimedia.org/wiki/File:Leichtbauroboter_-_Lightweight_robots_(14235555984).jpg) |
+| `robots/franka_panda.webp` | Franka Emika Panda | Ims | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) | [Franka_Emika1.jpg](https://commons.wikimedia.org/wiki/File:Franka_Emika1.jpg) |
+| `robots/ur5.webp` | Universal Robots UR5 | GrowSkills Robotics | [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) | [Cobot.jpg](https://commons.wikimedia.org/wiki/File:Cobot.jpg) |
+
+No freely licensed photo was found for the UFACTORY xArm 6 or the KUKA LWR 4 (checked Wikimedia
+Commons and Openverse, which also covers CC licensed Flickr photos), so those cards link to a product page instead.

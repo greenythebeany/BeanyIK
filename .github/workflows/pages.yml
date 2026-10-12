@@ -4,8 +4,8 @@ name: Website
 on:
   push:
     branches: [main]
-    # a new version tag rebuilds the site so the baked-in version moves along
-    tags: ['v*']
+    # no tag trigger: the github-pages environment only deploys from main, and
+    # the version bump in package.json lands on main anyway, which rebuilds the site
     paths: ['website/**', 'renderer/**', 'scripts/build-web.mjs', '.github/workflows/pages.yml', 'package.json']
   pull_request:
     paths: ['website/**', 'renderer/**', 'scripts/build-web.mjs']

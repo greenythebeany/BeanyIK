@@ -6,16 +6,24 @@ const REPO = 'https://github.com/greenythebeany/BeanyIK';
 const BASE = import.meta.env.BASE_URL;
 
 // the URDF samples bundled with the web version (website/app-samples).
-// photos are hotlinked from Wikimedia Commons under their free licenses,
-// robots without a free photo link to the maker instead
-const COMMONS = 'https://commons.wikimedia.org/wiki/';
+// photos are freely licensed (Wikimedia Commons), cropped to 800x600 and kept
+// in public/robots. robots without a free photo link to the maker instead
 const SAMPLE_ROBOTS = [
   { file: 'kuka_iiwa', name: 'LBR iiwa', maker: 'KUKA', dof: 7,
-    photo: { file: 'KUKA_LBR_iiwa.jpg', by: 'KUKA Laboratories GmbH', license: 'CC BY-SA 3.0' } },
+    photo: {
+      src: 'robots/kuka_iiwa.webp', by: 'DLR German Aerospace Center', license: 'CC BY 2.0',
+      page: 'https://commons.wikimedia.org/wiki/File:Leichtbauroboter_-_Lightweight_robots_(14235555984).jpg',
+    } },
   { file: 'franka_panda', name: 'Panda', maker: 'Franka Emika', dof: 7,
-    photo: { file: 'Franka_Emika1.jpg', by: 'Ims', license: 'CC BY-SA 4.0' } },
+    photo: {
+      src: 'robots/franka_panda.webp', by: 'Ims', license: 'CC BY-SA 4.0',
+      page: 'https://commons.wikimedia.org/wiki/File:Franka_Emika1.jpg',
+    } },
   { file: 'ur5', name: 'UR5', maker: 'Universal Robots', dof: 6,
-    photo: { file: 'UR16e_robot_arm.png', by: 'Wikimedia Commons', license: 'CC BY-SA 4.0', model: 'UR16e' } },
+    photo: {
+      src: 'robots/ur5.webp', by: 'GrowSkills Robotics', license: 'CC BY-SA 4.0',
+      page: 'https://commons.wikimedia.org/wiki/File:Cobot.jpg',
+    } },
   { file: 'xarm6', name: 'xArm 6', maker: 'UFACTORY', dof: 6, link: 'https://www.ufactory.us/product/ufactory-xarm-6' },
   { file: 'kuka_lwr', name: 'LWR 4', maker: 'KUKA', dof: 7, link: 'https://qviro.com/product/kuka/lwr/specifications' },
 ];
@@ -34,9 +42,9 @@ function SamplePhoto({ robot, t }) {
   }
   return (
     <div className="sample-photo">
-      <img src={`${COMMONS}Special:FilePath/${p.file}?width=640`} alt={`${robot.maker} ${p.model || robot.name}`} loading="lazy" onError={() => setFailed(true)} />
-      <a className="sample-credit" href={`${COMMONS}File:${p.file}`} target="_blank" rel="noopener noreferrer">
-        {p.model ? `${fill(t.web.photoOf, { model: p.model })} ` : ''}{t.web.photo}: {p.by}, {p.license}
+      <img src={`${BASE}${p.src}`} alt={`${robot.maker} ${robot.name}`} loading="lazy" width="800" height="600" onError={() => setFailed(true)} />
+      <a className="sample-credit" href={p.page} target="_blank" rel="noopener noreferrer">
+        {t.web.photo}: {p.by}, {p.license}
       </a>
     </div>
   );
