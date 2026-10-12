@@ -6,9 +6,9 @@ on:
     branches: [main]
     # a new version tag rebuilds the site so the baked-in version moves along
     tags: ['v*']
-    paths: ['website/**', '.github/workflows/pages.yml', 'package.json']
+    paths: ['website/**', 'renderer/**', 'scripts/build-web.mjs', '.github/workflows/pages.yml', 'package.json']
   pull_request:
-    paths: ['website/**']
+    paths: ['website/**', 'renderer/**', 'scripts/build-web.mjs']
   workflow_dispatch:
 
 permissions:

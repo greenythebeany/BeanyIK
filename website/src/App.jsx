@@ -187,6 +187,7 @@ export default function App() {
                   <Icon name={isMac ? 'apple' : 'windows'} size={18} />
                   {fill(t.hero.download, { os: isMac ? 'macOS' : 'Windows' })}
                 </a>
+                <a className="btn btn-lg web-only" href={`${BASE}app/`}><Icon name="play" size={18} />{t.hero.openWeb}</a>
                 <a className="btn btn-lg" href={REPO}><Icon name="github" size={18} />{t.hero.github}</a>
               </div>
               <div className="hero-meta">
@@ -237,6 +238,12 @@ export default function App() {
         </Section>
 
         <Section id="try" kicker={t.tryIt.kicker} title={t.tryIt.title} text={t.tryIt.text}>
+          <div className="web-launch reveal">
+            <a className="btn btn-primary btn-lg web-only" href={`${BASE}app/`}><Icon name="play" size={18} />{t.tryIt.open}</a>
+            <span className="web-only">{t.tryIt.note}</span>
+            <span className="phone-only">{t.tryIt.phone}</span>
+          </div>
+          <h3 className="mini-title reveal">{t.tryIt.mini}</h3>
           <div className="reveal"><ArmDemo /></div>
         </Section>
 
