@@ -178,7 +178,7 @@ export default function App() {
   const portable = findAsset(rel, /portable.*\.exe$/i);
   const releasesUrl = rel?.url || `${REPO}/releases/latest`;
   const mb = (a) => (a?.size ? `${(a.size / 1048576).toFixed(0)} MB` : '');
-  const nav = [['features', t.nav.features], ['demos', t.nav.demos], ['try', t.nav.try], ['screens', t.nav.screens], ['download', t.nav.download], ['faq', t.nav.faq]];
+  const nav = [['features', t.nav.features], ['demos', t.nav.demos], ['robots', t.nav.robots], ['screens', t.nav.screens], ['download', t.nav.download], ['faq', t.nav.faq]];
   const ctx = useMemo(() => ({ lang, t, setLang }), [lang, t]);
 
   return (
@@ -273,48 +273,21 @@ export default function App() {
           </div>
         </Section>
 
-        <section id="try" className="section">
-          <div className="wrap">
-            <div className="web-hero">
-              <div className="section-head reveal">
-                <div className="kicker">{t.web.kicker}</div>
-                <h2>{t.web.title}</h2>
-                <p>{t.web.text}</p>
-                <div className="web-actions">
-                  <a className="btn btn-primary btn-lg web-only" href={`${BASE}app/`}><Icon name="play" size={18} />{t.web.open}</a>
-                  <small className="web-only">{t.web.note}</small>
-                  <p className="phone-only">{t.web.phone}</p>
+        <Section id="robots" kicker={t.web.samplesKicker} title={t.web.samplesTitle} text={t.web.samplesText}>
+          <div className="sample-grid">
+            {SAMPLE_ROBOTS.map((r) => (
+              <article key={r.file} className="card sample reveal">
+                <SamplePhoto robot={r} t={t} />
+                <div className="sample-body">
+                  <span className="sample-maker">{r.maker}</span>
+                  <h4>{r.name}</h4>
+                  <div className="sample-specs"><span className="pill">{fill(t.web.joints, { n: r.dof })}</span></div>
+                  <a className="btn" href={`${BASE}app/samples/${r.file}.urdf`} download><Icon name="download" size={16} />{t.web.download}</a>
                 </div>
-              </div>
-              <div className="window reveal">
-                <div className="window-bar">
-                  <img src={`${BASE}logo.png`} alt="" width="16" height="16" />
-                  <span className="window-tab">lbr_iiwa</span>
-                  <span className="window-dots"><i /><i /><i /></span>
-                </div>
-                <img className="window-shot" src={`${BASE}media/web-version.webp`} alt={t.web.shotAlt} width="1280" height="760" loading="lazy" />
-              </div>
-            </div>
-
-            <div className="samples-head reveal">
-              <h3>{t.web.samplesTitle}</h3>
-              <p>{t.web.samplesText}</p>
-            </div>
-            <div className="sample-grid">
-              {SAMPLE_ROBOTS.map((r) => (
-                <article key={r.file} className="card sample reveal">
-                  <SamplePhoto robot={r} t={t} />
-                  <div className="sample-body">
-                    <span className="sample-maker">{r.maker}</span>
-                    <h4>{r.name}</h4>
-                    <div className="sample-specs"><span className="pill">{fill(t.web.joints, { n: r.dof })}</span></div>
-                    <a className="btn" href={`${BASE}app/samples/${r.file}.urdf`} download><Icon name="download" size={16} />{t.web.download}</a>
-                  </div>
-                </article>
-              ))}
-            </div>
+              </article>
+            ))}
           </div>
-        </section>
+        </Section>
 
         <Section id="screens" kicker={t.screens.kicker} title={t.screens.title} className="alt">
           <div className="segmented reveal" role="tablist">

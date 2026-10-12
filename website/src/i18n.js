@@ -2,7 +2,7 @@ import { createContext, useContext } from 'react';
 
 export const STRINGS = {
   en: {
-    nav: { features: 'Features', demos: 'Demos', try: 'Web version', screens: 'Screenshots', download: 'Download', faq: 'FAQ' },
+    nav: { features: 'Features', demos: 'Demos', robots: 'Robots', screens: 'Screenshots', download: 'Download', faq: 'FAQ' },
     menu: 'Menu',
     themeLight: 'Light theme',
     themeDark: 'Dark theme',
@@ -48,13 +48,8 @@ export const STRINGS = {
       ],
     },
     web: {
-      kicker: 'Web version',
-      title: 'Run BeanyIK in your browser',
-      text: 'The full app, nothing to install. Build a chain, solve IK and import a URDF. The robots below are ready on its start screen.',
-      open: 'Open the web version',
-      note: 'Saving and export are only in the desktop app.',
       phone: 'The web version needs a computer with a mouse. You can still download the URDF files below.',
-      shotAlt: 'KUKA LBR iiwa imported from URDF in the BeanyIK web version',
+      samplesKicker: 'URDF',
       samplesTitle: 'Sample robots',
       samplesText: 'Real arms as URDF files. Download one and open it with Import URDF.',
       joints: '{n} joints',
@@ -127,7 +122,7 @@ export const STRINGS = {
     },
   },
   sk: {
-    nav: { features: 'Funkcie', demos: 'Ukážky', try: 'Webová verzia', screens: 'Snímky', download: 'Stiahnuť', faq: 'Otázky' },
+    nav: { features: 'Funkcie', demos: 'Ukážky', robots: 'Roboty', screens: 'Snímky', download: 'Stiahnuť', faq: 'Otázky' },
     menu: 'Menu',
     themeLight: 'Svetlá téma',
     themeDark: 'Tmavá téma',
@@ -173,13 +168,8 @@ export const STRINGS = {
       ],
     },
     web: {
-      kicker: 'Webová verzia',
-      title: 'Spusti BeanyIK v prehliadači',
-      text: 'Celá aplikácia bez inštalácie. Poskladaj reťazec, rieš IK a importuj URDF. Roboty nižšie máš pripravené na úvodnej obrazovke.',
-      open: 'Otvoriť webovú verziu',
-      note: 'Ukladanie a export sú len v desktopovej aplikácii.',
       phone: 'Webová verzia potrebuje počítač s myšou. URDF súbory nižšie si však stiahnuť môžeš.',
-      shotAlt: 'KUKA LBR iiwa importovaná z URDF vo webovej verzii BeanyIK',
+      samplesKicker: 'URDF',
       samplesTitle: 'Vzorové roboty',
       samplesText: 'Skutočné ramená ako URDF súbory. Stiahni si ktorýkoľvek a otvor ho cez Importovať URDF.',
       joints: '{n} kĺbov',
